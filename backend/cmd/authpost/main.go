@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	authpost "github.com/hoangNguyenDev3/backend/internal/app/authpost"
+	authpost "github.com/hoangNguyenDev3/WanderSphere/internal/app/authpost"
 	"google.golang.org/grpc"
 )
 

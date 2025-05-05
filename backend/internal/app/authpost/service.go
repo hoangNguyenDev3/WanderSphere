@@ -3,7 +3,7 @@ package authpost
 import (
 	"context"
 
-	pb "github.com/hoangNguyenDev3/backend/pkg/types/proto/pb/authpost"
+	pb "github.com/hoangNguyenDev3/WanderSphere/pkg/types/proto/pb/authpost"
 )
 
 type AuthenticationAndPostService struct {
