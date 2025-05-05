@@ -85,10 +85,11 @@ type UserDetailInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	UserName      string                 `protobuf:"bytes,2,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
-	FirstName     string                 `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
-	LastName      string                 `protobuf:"bytes,4,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
-	Dob           int64                  `protobuf:"varint,5,opt,name=dob,proto3" json:"dob,omitempty"`
-	Email         string                 `protobuf:"bytes,6,opt,name=email,proto3" json:"email,omitempty"`
+	UserPassword  string                 `protobuf:"bytes,3,opt,name=user_password,json=userPassword,proto3" json:"user_password,omitempty"`
+	FirstName     string                 `protobuf:"bytes,4,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName      string                 `protobuf:"bytes,5,opt,name=last_name,json=lastName,proto3" json:"last_name,omitempty"`
+	Dob           int64                  `protobuf:"varint,6,opt,name=dob,proto3" json:"dob,omitempty"`
+	Email         string                 `protobuf:"bytes,7,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -133,6 +134,13 @@ func (x *UserDetailInfo) GetUserId() int64 {
 func (x *UserDetailInfo) GetUserName() string {
 	if x != nil {
 		return x.UserName
+	}
+	return ""
+}
+
+func (x *UserDetailInfo) GetUserPassword() string {
+	if x != nil {
+		return x.UserPassword
 	}
 	return ""
 }
@@ -397,15 +405,16 @@ const file_authpost_proto_rawDesc = "" +
 	"\bUserInfo\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
 	"\tuser_name\x18\x02 \x01(\tR\buserName\x12#\n" +
-	"\ruser_password\x18\x03 \x01(\tR\fuserPassword\"\xaa\x01\n" +
+	"\ruser_password\x18\x03 \x01(\tR\fuserPassword\"\xcf\x01\n" +
 	"\x0eUserDetailInfo\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x1b\n" +
-	"\tuser_name\x18\x02 \x01(\tR\buserName\x12\x1d\n" +
+	"\tuser_name\x18\x02 \x01(\tR\buserName\x12#\n" +
+	"\ruser_password\x18\x03 \x01(\tR\fuserPassword\x12\x1d\n" +
 	"\n" +
-	"first_name\x18\x03 \x01(\tR\tfirstName\x12\x1b\n" +
-	"\tlast_name\x18\x04 \x01(\tR\blastName\x12\x10\n" +
-	"\x03dob\x18\x05 \x01(\x03R\x03dob\x12\x14\n" +
-	"\x05email\x18\x06 \x01(\tR\x05email\"R\n" +
+	"first_name\x18\x04 \x01(\tR\tfirstName\x12\x1b\n" +
+	"\tlast_name\x18\x05 \x01(\tR\blastName\x12\x10\n" +
+	"\x03dob\x18\x06 \x01(\x03R\x03dob\x12\x14\n" +
+	"\x05email\x18\a \x01(\tR\x05email\"R\n" +
 	"\n" +
 	"UserResult\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\rR\x06status\x12,\n" +
