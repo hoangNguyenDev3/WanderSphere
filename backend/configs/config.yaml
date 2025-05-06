@@ -1,0 +1,35 @@
+# Shared PostgreSQL configuration
+postgres: &POSTGRES
+  dsn: "postgres://admin:admin@localhost:5432/wander_sphere?sslmode=disable"
+  max_pool_size: 10
+  min_pool_size: 1
+  search_path: "public"
+
+# Shared Redis configuration
+redis: &REDIS
+  addr: "localhost:6379"
+  password: "admin"
+
+# Authentication & Post service (gRPC)
+authenticate_and_post_config: &AAP
+  port: 19001
+  postgres: *POSTGRES
+  redis: *REDIS
+
+# Newsfeed service (gRPC)
+newsfeed_config: &NF
+  port: 19002
+  postgres: *POSTGRES
+  redis: *REDIS
+
+# Web App (BFF) service
+web_config:
+  port: 19003
+  api_version:
+    - "v1"
+  authenticate_and_post:
+    hosts:
+      - "localhost:19001"
+  newsfeed:
+    hosts:
+      - "localhost:19002"
