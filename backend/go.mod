@@ -7,9 +7,9 @@ toolchain go1.23.8
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-playground/validator/v10 v10.20.0
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/google/uuid v1.6.0
-	github.com/redis/go-redis/v9 v9.8.0
 	golang.org/x/crypto v0.38.0
 	google.golang.org/grpc v1.72.0
 	google.golang.org/protobuf v1.36.6

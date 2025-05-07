@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+
 type User struct {
 	ID             int64     `gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
 	HashedPassword string    `gorm:"column:hashed_password;type:varchar(1000);not null"`
@@ -20,6 +21,7 @@ func (User) TableName() string {
 }
 
 type Post struct {
+type Post struct {
 	ID               int64     `gorm:"column:id;type:bigint;primaryKey;autoIncrement"`
 	UserID           int64     `gorm:"column:user_id;type:bigint;not null"`
 	ContentText      string    `gorm:"column:content_text;type:text(100000);not null"`
@@ -27,7 +29,7 @@ type Post struct {
 	CreatedAt        time.Time `gorm:"column:created_at;type:datetime;default:current_timestamp;not null"`
 	Visible          bool      `gorm:"column:visible;type:boolean;not null"`
 
-	User User `gorm:"foreign_key:user_id;references:id"`
+	User User `gorm:"foreignKey:user_id;references:id"`
 }
 
 func (Post) TableName() string {
@@ -41,8 +43,8 @@ type Comment struct {
 	Content   string    `gorm:"column:content;type:text(100000);not null"`
 	CreatedAt time.Time `gorm:"column:created_at;type:datetime;not null;default:current_timestamp"`
 
-	Post Post `gorm:"foreign_key:post_id;references:id"`
-	User User `gorm:"foreign_key:user_id;references:id"`
+	Post Post `gorm:"foreignKey:post_id;references:id"`
+	User User `gorm:"foreignKey:user_id;references:id"`
 }
 
 func (Comment) TableName() string {
@@ -54,22 +56,22 @@ type Like struct {
 	UserID    int64     `gorm:"column:user_id;type:bigint;not null;index:unique_post_id_user_id,unique"`
 	CreatedAt time.Time `gorm:"column:created_at;type:datetime;not null;default:current_timestamp"`
 
-	Post Post `gorm:"constraint:foreign_key:post_id;references:id"`
-	User User `gorm:"foreign_key:user_id;references:id"`
+	Post Post `gorm:"constraint:foreignKey:post_id;references:id"`
+	User User `gorm:"foreignKey:user_id;references:id"`
 }
 
 func (Like) TableName() string {
 	return "like"
 }
 
-type UserUser struct {
+type Following struct {
 	UserID     int64 `gorm:"column:user_id;type:bigint;not null;index:unique_user_id_follower_id,unique"`
 	FollowerID int64 `gorm:"column:follower_id;type:bigint;not null;index:unique_user_id_follower_id,unique"`
 
-	User     User `gorm:"foreign_key:user_id;references:id"`
-	Follower User `gorm:"foreign_key:follower_id;references:id"`
+	User     User `gorm:"foreignKey:user_id;references:id"`
+	Follower User `gorm:"foreignKey:follower_id;references:id"`
 }
 
-func (UserUser) TableName() string {
-	return "user_user"
+func (Following) TableName() string {
+	return "following"
 }

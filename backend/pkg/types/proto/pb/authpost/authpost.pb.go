@@ -67,6 +67,52 @@ func (UserStatus) EnumDescriptor() ([]byte, []int) {
 	return file_authpost_proto_rawDescGZIP(), []int{0}
 }
 
+type ActionStatus int32
+
+const (
+	ActionStatus_SUCCEEDED ActionStatus = 0
+	ActionStatus_FAILED    ActionStatus = 1
+)
+
+// Enum value maps for ActionStatus.
+var (
+	ActionStatus_name = map[int32]string{
+		0: "SUCCEEDED",
+		1: "FAILED",
+	}
+	ActionStatus_value = map[string]int32{
+		"SUCCEEDED": 0,
+		"FAILED":    1,
+	}
+)
+
+func (x ActionStatus) Enum() *ActionStatus {
+	p := new(ActionStatus)
+	*p = x
+	return p
+}
+
+func (x ActionStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ActionStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_authpost_proto_enumTypes[1].Descriptor()
+}
+
+func (ActionStatus) Type() protoreflect.EnumType {
+	return &file_authpost_proto_enumTypes[1]
+}
+
+func (x ActionStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ActionStatus.Descriptor instead.
+func (ActionStatus) EnumDescriptor() ([]byte, []int) {
+	return file_authpost_proto_rawDescGZIP(), []int{1}
+}
+
 type UserInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -315,6 +361,58 @@ func (x *UserFollower) GetFollowers() []*UserInfo {
 	return nil
 }
 
+type UserAndFollower struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	User          *UserInfo              `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
+	Follower      *UserInfo              `protobuf:"bytes,2,opt,name=follower,proto3" json:"follower,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UserAndFollower) Reset() {
+	*x = UserAndFollower{}
+	mi := &file_authpost_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UserAndFollower) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UserAndFollower) ProtoMessage() {}
+
+func (x *UserAndFollower) ProtoReflect() protoreflect.Message {
+	mi := &file_authpost_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UserAndFollower.ProtoReflect.Descriptor instead.
+func (*UserAndFollower) Descriptor() ([]byte, []int) {
+	return file_authpost_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *UserAndFollower) GetUser() *UserInfo {
+	if x != nil {
+		return x.User
+	}
+	return nil
+}
+
+func (x *UserAndFollower) GetFollower() *UserInfo {
+	if x != nil {
+		return x.Follower
+	}
+	return nil
+}
+
 type GetPostRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PostId        int64                  `protobuf:"varint,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
@@ -324,7 +422,7 @@ type GetPostRequest struct {
 
 func (x *GetPostRequest) Reset() {
 	*x = GetPostRequest{}
-	mi := &file_authpost_proto_msgTypes[4]
+	mi := &file_authpost_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -336,7 +434,7 @@ func (x *GetPostRequest) String() string {
 func (*GetPostRequest) ProtoMessage() {}
 
 func (x *GetPostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[4]
+	mi := &file_authpost_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -349,7 +447,7 @@ func (x *GetPostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostRequest.ProtoReflect.Descriptor instead.
 func (*GetPostRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{4}
+	return file_authpost_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GetPostRequest) GetPostId() int64 {
@@ -373,7 +471,7 @@ type Post struct {
 
 func (x *Post) Reset() {
 	*x = Post{}
-	mi := &file_authpost_proto_msgTypes[5]
+	mi := &file_authpost_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -385,7 +483,7 @@ func (x *Post) String() string {
 func (*Post) ProtoMessage() {}
 
 func (x *Post) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[5]
+	mi := &file_authpost_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -398,7 +496,7 @@ func (x *Post) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Post.ProtoReflect.Descriptor instead.
 func (*Post) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{5}
+	return file_authpost_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Post) GetPostId() int64 {
@@ -443,6 +541,50 @@ func (x *Post) GetCreatedAt() int64 {
 	return 0
 }
 
+type ActionResult struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        ActionStatus           `protobuf:"varint,1,opt,name=status,proto3,enum=authpost.ActionStatus" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ActionResult) Reset() {
+	*x = ActionResult{}
+	mi := &file_authpost_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ActionResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ActionResult) ProtoMessage() {}
+
+func (x *ActionResult) ProtoReflect() protoreflect.Message {
+	mi := &file_authpost_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ActionResult.ProtoReflect.Descriptor instead.
+func (*ActionResult) Descriptor() ([]byte, []int) {
+	return file_authpost_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ActionResult) GetStatus() ActionStatus {
+	if x != nil {
+		return x.Status
+	}
+	return ActionStatus_SUCCEEDED
+}
+
 var File_authpost_proto protoreflect.FileDescriptor
 
 const file_authpost_proto_rawDesc = "" +
@@ -466,7 +608,10 @@ const file_authpost_proto_rawDesc = "" +
 	"\x06status\x18\x01 \x01(\x0e2\x14.authpost.UserStatusR\x06status\x12,\n" +
 	"\x04info\x18\x02 \x01(\v2\x18.authpost.UserDetailInfoR\x04info\"@\n" +
 	"\fUserFollower\x120\n" +
-	"\tfollowers\x18\x01 \x03(\v2\x12.authpost.UserInfoR\tfollowers\")\n" +
+	"\tfollowers\x18\x01 \x03(\v2\x12.authpost.UserInfoR\tfollowers\"i\n" +
+	"\x0fUserAndFollower\x12&\n" +
+	"\x04user\x18\x01 \x01(\v2\x12.authpost.UserInfoR\x04user\x12.\n" +
+	"\bfollower\x18\x02 \x01(\v2\x12.authpost.UserInfoR\bfollower\")\n" +
 	"\x0eGetPostRequest\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\x03R\x06postId\"\xc2\x01\n" +
 	"\x04Post\x12\x17\n" +
@@ -476,18 +621,26 @@ const file_authpost_proto_rawDesc = "" +
 	"\x12content_image_path\x18\x04 \x01(\tR\x10contentImagePath\x12\x18\n" +
 	"\avisible\x18\x05 \x01(\bR\avisible\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\x03R\tcreatedAt*#\n" +
+	"created_at\x18\x06 \x01(\x03R\tcreatedAt\">\n" +
+	"\fActionResult\x12.\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x16.authpost.ActionStatusR\x06status*#\n" +
 	"\n" +
 	"UserStatus\x12\x06\n" +
 	"\x02OK\x10\x00\x12\r\n" +
-	"\tNOT_FOUND\x10\x012\xda\x02\n" +
-	"\x15AuthenticationAndPost\x12E\n" +
+	"\tNOT_FOUND\x10\x01*)\n" +
+	"\fActionStatus\x12\r\n" +
+	"\tSUCCEEDED\x10\x00\x12\n" +
+	"\n" +
+	"\x06FAILED\x10\x012\xa3\x03\n" +
+	"\x13AuthenticateAndPost\x12E\n" +
 	"\x17CheckUserAuthentication\x12\x12.authpost.UserInfo\x1a\x14.authpost.UserResult\"\x00\x12>\n" +
 	"\n" +
 	"CreateUser\x12\x18.authpost.UserDetailInfo\x1a\x14.authpost.UserResult\"\x00\x12<\n" +
 	"\bEditUser\x12\x18.authpost.UserDetailInfo\x1a\x14.authpost.UserResult\"\x00\x12?\n" +
-	"\x0fGetUserFollower\x12\x12.authpost.UserInfo\x1a\x16.authpost.UserFollower\"\x00\x12;\n" +
-	"\rGetPostDetail\x12\x18.authpost.GetPostRequest\x1a\x0e.authpost.Post\"\x00B\fZ\n" +
+	"\x0fGetUserFollower\x12\x12.authpost.UserInfo\x1a\x16.authpost.UserFollower\"\x00\x12A\n" +
+	"\n" +
+	"FollowUser\x12\x19.authpost.UserAndFollower\x1a\x16.authpost.ActionResult\"\x00\x12C\n" +
+	"\fUnfollowUser\x12\x19.authpost.UserAndFollower\x1a\x16.authpost.ActionResult\"\x00B\fZ\n" +
 	".;authpostb\x06proto3"
 
 var (
@@ -502,36 +655,44 @@ func file_authpost_proto_rawDescGZIP() []byte {
 	return file_authpost_proto_rawDescData
 }
 
-var file_authpost_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_authpost_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_authpost_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_authpost_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_authpost_proto_goTypes = []any{
-	(UserStatus)(0),        // 0: authpost.UserStatus
-	(*UserInfo)(nil),       // 1: authpost.UserInfo
-	(*UserDetailInfo)(nil), // 2: authpost.UserDetailInfo
-	(*UserResult)(nil),     // 3: authpost.UserResult
-	(*UserFollower)(nil),   // 4: authpost.UserFollower
-	(*GetPostRequest)(nil), // 5: authpost.GetPostRequest
-	(*Post)(nil),           // 6: authpost.Post
+	(UserStatus)(0),         // 0: authpost.UserStatus
+	(ActionStatus)(0),       // 1: authpost.ActionStatus
+	(*UserInfo)(nil),        // 2: authpost.UserInfo
+	(*UserDetailInfo)(nil),  // 3: authpost.UserDetailInfo
+	(*UserResult)(nil),      // 4: authpost.UserResult
+	(*UserFollower)(nil),    // 5: authpost.UserFollower
+	(*UserAndFollower)(nil), // 6: authpost.UserAndFollower
+	(*GetPostRequest)(nil),  // 7: authpost.GetPostRequest
+	(*Post)(nil),            // 8: authpost.Post
+	(*ActionResult)(nil),    // 9: authpost.ActionResult
 }
 var file_authpost_proto_depIdxs = []int32{
-	0, // 0: authpost.UserResult.status:type_name -> authpost.UserStatus
-	2, // 1: authpost.UserResult.info:type_name -> authpost.UserDetailInfo
-	1, // 2: authpost.UserFollower.followers:type_name -> authpost.UserInfo
-	1, // 3: authpost.AuthenticationAndPost.CheckUserAuthentication:input_type -> authpost.UserInfo
-	2, // 4: authpost.AuthenticationAndPost.CreateUser:input_type -> authpost.UserDetailInfo
-	2, // 5: authpost.AuthenticationAndPost.EditUser:input_type -> authpost.UserDetailInfo
-	1, // 6: authpost.AuthenticationAndPost.GetUserFollower:input_type -> authpost.UserInfo
-	5, // 7: authpost.AuthenticationAndPost.GetPostDetail:input_type -> authpost.GetPostRequest
-	3, // 8: authpost.AuthenticationAndPost.CheckUserAuthentication:output_type -> authpost.UserResult
-	3, // 9: authpost.AuthenticationAndPost.CreateUser:output_type -> authpost.UserResult
-	3, // 10: authpost.AuthenticationAndPost.EditUser:output_type -> authpost.UserResult
-	4, // 11: authpost.AuthenticationAndPost.GetUserFollower:output_type -> authpost.UserFollower
-	6, // 12: authpost.AuthenticationAndPost.GetPostDetail:output_type -> authpost.Post
-	8, // [8:13] is the sub-list for method output_type
-	3, // [3:8] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	0,  // 0: authpost.UserResult.status:type_name -> authpost.UserStatus
+	3,  // 1: authpost.UserResult.info:type_name -> authpost.UserDetailInfo
+	2,  // 2: authpost.UserFollower.followers:type_name -> authpost.UserInfo
+	2,  // 3: authpost.UserAndFollower.user:type_name -> authpost.UserInfo
+	2,  // 4: authpost.UserAndFollower.follower:type_name -> authpost.UserInfo
+	1,  // 5: authpost.ActionResult.status:type_name -> authpost.ActionStatus
+	2,  // 6: authpost.AuthenticateAndPost.CheckUserAuthentication:input_type -> authpost.UserInfo
+	3,  // 7: authpost.AuthenticateAndPost.CreateUser:input_type -> authpost.UserDetailInfo
+	3,  // 8: authpost.AuthenticateAndPost.EditUser:input_type -> authpost.UserDetailInfo
+	2,  // 9: authpost.AuthenticateAndPost.GetUserFollower:input_type -> authpost.UserInfo
+	6,  // 10: authpost.AuthenticateAndPost.FollowUser:input_type -> authpost.UserAndFollower
+	6,  // 11: authpost.AuthenticateAndPost.UnfollowUser:input_type -> authpost.UserAndFollower
+	4,  // 12: authpost.AuthenticateAndPost.CheckUserAuthentication:output_type -> authpost.UserResult
+	4,  // 13: authpost.AuthenticateAndPost.CreateUser:output_type -> authpost.UserResult
+	4,  // 14: authpost.AuthenticateAndPost.EditUser:output_type -> authpost.UserResult
+	5,  // 15: authpost.AuthenticateAndPost.GetUserFollower:output_type -> authpost.UserFollower
+	9,  // 16: authpost.AuthenticateAndPost.FollowUser:output_type -> authpost.ActionResult
+	9,  // 17: authpost.AuthenticateAndPost.UnfollowUser:output_type -> authpost.ActionResult
+	12, // [12:18] is the sub-list for method output_type
+	6,  // [6:12] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_authpost_proto_init() }
@@ -544,8 +705,8 @@ func file_authpost_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_authpost_proto_rawDesc), len(file_authpost_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   6,
+			NumEnums:      2,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

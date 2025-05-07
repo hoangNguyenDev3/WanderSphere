@@ -11,42 +11,47 @@ import (
 	pb "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 )
 
-type RandomClient struct {
-	clients []pb.AuthenticationAndPostClient
-}
-
-func NewClient(hosts []string) (pb.AuthenticationAndPostClient, error) {
+func NewClient(hosts []string) (pb.AuthenticateAndPostClient, error) {
 	var opts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-
-	clients := make([]pb.AuthenticationAndPostClient, len(hosts))
+	clients := make([]pb.AuthenticateAndPostClient, 0, len(hosts))
 	for _, host := range hosts {
 		conn, err := grpc.Dial(host, opts...)
 		if err != nil {
-			log.Fatalf("failed to connect to %s: %v", host, err)
+			log.Fatalf("fail to dial: %v", err)
 			return nil, err
 		}
-		client := pb.NewAuthenticationAndPostClient(conn)
+
+		client := pb.NewAuthenticateAndPostClient(conn)
 		clients = append(clients, client)
 	}
-	return &RandomClient{clients: clients}, nil
+
+	return &randomClient{clients: clients}, nil
 }
 
-func (c *RandomClient) CheckUserAuthentication(ctx context.Context, in *pb.UserInfo, opts ...grpc.CallOption) (*pb.UserResult, error) {
-	return c.clients[rand.Intn(len(c.clients))].CheckUserAuthentication(ctx, in, opts...)
+type randomClient struct {
+	clients []pb.AuthenticateAndPostClient
 }
 
-func (c *RandomClient) CreateUser(ctx context.Context, in *pb.UserDetailInfo, opts ...grpc.CallOption) (*pb.UserResult, error) {
-	return c.clients[rand.Intn(len(c.clients))].CreateUser(ctx, in, opts...)
+func (a *randomClient) CheckUserAuthentication(ctx context.Context, in *pb.UserInfo, opts ...grpc.CallOption) (*pb.UserResult, error) {
+	return a.clients[rand.Intn(len(a.clients))].CheckUserAuthentication(ctx, in, opts...)
 }
 
-func (c *RandomClient) EditUser(ctx context.Context, in *pb.UserDetailInfo, opts ...grpc.CallOption) (*pb.UserResult, error) {
-	return c.clients[rand.Intn(len(c.clients))].EditUser(ctx, in, opts...)
+func (a *randomClient) CreateUser(ctx context.Context, in *pb.UserDetailInfo, opts ...grpc.CallOption) (*pb.UserResult, error) {
+	return a.clients[rand.Intn(len(a.clients))].CreateUser(ctx, in, opts...)
 }
 
-func (c *RandomClient) GetUserFollowers(ctx context.Context, in *pb.UserInfo, opts ...grpc.CallOption) (*pb.UserFollower, error) {
-	return c.clients[rand.Intn(len(c.clients))].GetUserFollowers(ctx, in, opts...)
+func (a *randomClient) EditUser(ctx context.Context, in *pb.UserDetailInfo, opts ...grpc.CallOption) (*pb.UserResult, error) {
+	return a.clients[rand.Intn(len(a.clients))].EditUser(ctx, in, opts...)
 }
 
-func (c *RandomClient) GetPostDetail(ctx context.Context, in *pb.GetPostRequest, opts ...grpc.CallOption) (*pb.Post, error) {
-	return c.clients[rand.Intn(len(c.clients))].GetPostDetail(ctx, in, opts...)
+func (a *randomClient) GetUserFollower(ctx context.Context, in *pb.UserInfo, opts ...grpc.CallOption) (*pb.UserFollower, error) {
+	return a.clients[rand.Intn(len(a.clients))].GetUserFollower(ctx, in, opts...)
+}
+
+func (a *randomClient) FollowUser(ctx context.Context, in *pb.UserAndFollower, opts ...grpc.CallOption) (*pb.ActionResult, error) {
+	return a.clients[rand.Intn(len(a.clients))].FollowUser(ctx, in, opts...)
+}
+
+func (a *randomClient) UnfollowUser(ctx context.Context, in *pb.UserAndFollower, opts ...grpc.CallOption) (*pb.ActionResult, error) {
+	return a.clients[rand.Intn(len(a.clients))].UnfollowUser(ctx, in, opts...)
 }

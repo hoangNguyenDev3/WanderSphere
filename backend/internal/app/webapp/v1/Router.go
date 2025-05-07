@@ -7,4 +7,5 @@ import (
 
 func AddAllRouter(r *gin.RouterGroup, webService *service.WebService) {
 	AddUserRouter(r, webService)
+	AddFriendRouter(r, webService)
 }
