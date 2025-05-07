@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/hoangNguyenDev3/WanderSphere/configs"
-	"github.com/hoangNguyenDev3/WanderSphere/internal/app/webapp/service"
-	v1 "github.com/hoangNguyenDev3/WanderSphere/internal/app/webapp/v1"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/service"
+	v1 "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/v1"
 )
 
 type WebController struct {

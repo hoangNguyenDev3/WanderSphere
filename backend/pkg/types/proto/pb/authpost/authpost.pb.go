@@ -21,6 +21,52 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type UserStatus int32
+
+const (
+	UserStatus_OK        UserStatus = 0
+	UserStatus_NOT_FOUND UserStatus = 1
+)
+
+// Enum value maps for UserStatus.
+var (
+	UserStatus_name = map[int32]string{
+		0: "OK",
+		1: "NOT_FOUND",
+	}
+	UserStatus_value = map[string]int32{
+		"OK":        0,
+		"NOT_FOUND": 1,
+	}
+)
+
+func (x UserStatus) Enum() *UserStatus {
+	p := new(UserStatus)
+	*p = x
+	return p
+}
+
+func (x UserStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (UserStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_authpost_proto_enumTypes[0].Descriptor()
+}
+
+func (UserStatus) Type() protoreflect.EnumType {
+	return &file_authpost_proto_enumTypes[0]
+}
+
+func (x UserStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use UserStatus.Descriptor instead.
+func (UserStatus) EnumDescriptor() ([]byte, []int) {
+	return file_authpost_proto_rawDescGZIP(), []int{0}
+}
+
 type UserInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -175,7 +221,7 @@ func (x *UserDetailInfo) GetEmail() string {
 
 type UserResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        uint32                 `protobuf:"varint,1,opt,name=status,proto3" json:"status,omitempty"`
+	Status        UserStatus             `protobuf:"varint,1,opt,name=status,proto3,enum=authpost.UserStatus" json:"status,omitempty"`
 	Info          *UserDetailInfo        `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -211,11 +257,11 @@ func (*UserResult) Descriptor() ([]byte, []int) {
 	return file_authpost_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *UserResult) GetStatus() uint32 {
+func (x *UserResult) GetStatus() UserStatus {
 	if x != nil {
 		return x.Status
 	}
-	return 0
+	return UserStatus_OK
 }
 
 func (x *UserResult) GetInfo() *UserDetailInfo {
@@ -414,10 +460,10 @@ const file_authpost_proto_rawDesc = "" +
 	"first_name\x18\x04 \x01(\tR\tfirstName\x12\x1b\n" +
 	"\tlast_name\x18\x05 \x01(\tR\blastName\x12\x10\n" +
 	"\x03dob\x18\x06 \x01(\x03R\x03dob\x12\x14\n" +
-	"\x05email\x18\a \x01(\tR\x05email\"R\n" +
+	"\x05email\x18\a \x01(\tR\x05email\"h\n" +
 	"\n" +
-	"UserResult\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\rR\x06status\x12,\n" +
+	"UserResult\x12,\n" +
+	"\x06status\x18\x01 \x01(\x0e2\x14.authpost.UserStatusR\x06status\x12,\n" +
 	"\x04info\x18\x02 \x01(\v2\x18.authpost.UserDetailInfoR\x04info\"@\n" +
 	"\fUserFollower\x120\n" +
 	"\tfollowers\x18\x01 \x03(\v2\x12.authpost.UserInfoR\tfollowers\")\n" +
@@ -430,7 +476,11 @@ const file_authpost_proto_rawDesc = "" +
 	"\x12content_image_path\x18\x04 \x01(\tR\x10contentImagePath\x12\x18\n" +
 	"\avisible\x18\x05 \x01(\bR\avisible\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\x03R\tcreatedAt2\xda\x02\n" +
+	"created_at\x18\x06 \x01(\x03R\tcreatedAt*#\n" +
+	"\n" +
+	"UserStatus\x12\x06\n" +
+	"\x02OK\x10\x00\x12\r\n" +
+	"\tNOT_FOUND\x10\x012\xda\x02\n" +
 	"\x15AuthenticationAndPost\x12E\n" +
 	"\x17CheckUserAuthentication\x12\x12.authpost.UserInfo\x1a\x14.authpost.UserResult\"\x00\x12>\n" +
 	"\n" +
@@ -452,33 +502,36 @@ func file_authpost_proto_rawDescGZIP() []byte {
 	return file_authpost_proto_rawDescData
 }
 
+var file_authpost_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_authpost_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_authpost_proto_goTypes = []any{
-	(*UserInfo)(nil),       // 0: authpost.UserInfo
-	(*UserDetailInfo)(nil), // 1: authpost.UserDetailInfo
-	(*UserResult)(nil),     // 2: authpost.UserResult
-	(*UserFollower)(nil),   // 3: authpost.UserFollower
-	(*GetPostRequest)(nil), // 4: authpost.GetPostRequest
-	(*Post)(nil),           // 5: authpost.Post
+	(UserStatus)(0),        // 0: authpost.UserStatus
+	(*UserInfo)(nil),       // 1: authpost.UserInfo
+	(*UserDetailInfo)(nil), // 2: authpost.UserDetailInfo
+	(*UserResult)(nil),     // 3: authpost.UserResult
+	(*UserFollower)(nil),   // 4: authpost.UserFollower
+	(*GetPostRequest)(nil), // 5: authpost.GetPostRequest
+	(*Post)(nil),           // 6: authpost.Post
 }
 var file_authpost_proto_depIdxs = []int32{
-	1, // 0: authpost.UserResult.info:type_name -> authpost.UserDetailInfo
-	0, // 1: authpost.UserFollower.followers:type_name -> authpost.UserInfo
-	0, // 2: authpost.AuthenticationAndPost.CheckUserAuthentication:input_type -> authpost.UserInfo
-	1, // 3: authpost.AuthenticationAndPost.CreateUser:input_type -> authpost.UserDetailInfo
-	1, // 4: authpost.AuthenticationAndPost.EditUser:input_type -> authpost.UserDetailInfo
-	0, // 5: authpost.AuthenticationAndPost.GetUserFollower:input_type -> authpost.UserInfo
-	4, // 6: authpost.AuthenticationAndPost.GetPostDetail:input_type -> authpost.GetPostRequest
-	2, // 7: authpost.AuthenticationAndPost.CheckUserAuthentication:output_type -> authpost.UserResult
-	2, // 8: authpost.AuthenticationAndPost.CreateUser:output_type -> authpost.UserResult
-	2, // 9: authpost.AuthenticationAndPost.EditUser:output_type -> authpost.UserResult
-	3, // 10: authpost.AuthenticationAndPost.GetUserFollower:output_type -> authpost.UserFollower
-	5, // 11: authpost.AuthenticationAndPost.GetPostDetail:output_type -> authpost.Post
-	7, // [7:12] is the sub-list for method output_type
-	2, // [2:7] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	0, // 0: authpost.UserResult.status:type_name -> authpost.UserStatus
+	2, // 1: authpost.UserResult.info:type_name -> authpost.UserDetailInfo
+	1, // 2: authpost.UserFollower.followers:type_name -> authpost.UserInfo
+	1, // 3: authpost.AuthenticationAndPost.CheckUserAuthentication:input_type -> authpost.UserInfo
+	2, // 4: authpost.AuthenticationAndPost.CreateUser:input_type -> authpost.UserDetailInfo
+	2, // 5: authpost.AuthenticationAndPost.EditUser:input_type -> authpost.UserDetailInfo
+	1, // 6: authpost.AuthenticationAndPost.GetUserFollower:input_type -> authpost.UserInfo
+	5, // 7: authpost.AuthenticationAndPost.GetPostDetail:input_type -> authpost.GetPostRequest
+	3, // 8: authpost.AuthenticationAndPost.CheckUserAuthentication:output_type -> authpost.UserResult
+	3, // 9: authpost.AuthenticationAndPost.CreateUser:output_type -> authpost.UserResult
+	3, // 10: authpost.AuthenticationAndPost.EditUser:output_type -> authpost.UserResult
+	4, // 11: authpost.AuthenticationAndPost.GetUserFollower:output_type -> authpost.UserFollower
+	6, // 12: authpost.AuthenticationAndPost.GetPostDetail:output_type -> authpost.Post
+	8, // [8:13] is the sub-list for method output_type
+	3, // [3:8] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_authpost_proto_init() }
@@ -491,13 +544,14 @@ func file_authpost_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_authpost_proto_rawDesc), len(file_authpost_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_authpost_proto_goTypes,
 		DependencyIndexes: file_authpost_proto_depIdxs,
+		EnumInfos:         file_authpost_proto_enumTypes,
 		MessageInfos:      file_authpost_proto_msgTypes,
 	}.Build()
 	File_authpost_proto = out.File

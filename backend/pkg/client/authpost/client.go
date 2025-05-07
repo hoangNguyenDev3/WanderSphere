@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "github.com/hoangNguyenDev3/WanderSphere/pkg/types/proto/pb/authpost"
+	pb "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 )
 
 type RandomClient struct {

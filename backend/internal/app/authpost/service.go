@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/hoangNguyenDev3/WanderSphere/configs"
-	"github.com/hoangNguyenDev3/WanderSphere/internal/auth"
-	"github.com/hoangNguyenDev3/WanderSphere/internal/models"
-	authpost "github.com/hoangNguyenDev3/WanderSphere/pkg/types/proto/pb/authpost"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/auth"
+	authpost "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

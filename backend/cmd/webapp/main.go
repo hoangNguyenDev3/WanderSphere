@@ -4,8 +4,8 @@ import (
 	"flag"
 	"log"
 
-	"github.com/hoangNguyenDev3/WanderSphere/configs"
-	"github.com/hoangNguyenDev3/WanderSphere/internal/app/webapp"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp"
 )
 
 func main() {
