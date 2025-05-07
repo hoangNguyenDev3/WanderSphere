@@ -3,23 +3,14 @@ package webapp
 import (
 	"fmt"
 
-	"github.com/hoangNguyenDev3/WanderSphere/configs"
-	v1 "github.com/hoangNguyenDev3/WanderSphere/internal/app/webapp/v1"
-
-	client_authpost "github.com/hoangNguyenDev3/WanderSphere/pkg/client/authpost"
-
 	"github.com/gin-gonic/gin"
-	pb_authpost "github.com/hoangNguyenDev3/WanderSphere/pkg/types/proto/pb/authpost"
-	pb_newsfeed "github.com/hoangNguyenDev3/WanderSphere/pkg/types/proto/pb/newsfeed"
+	"github.com/hoangNguyenDev3/WanderSphere/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/internal/app/webapp/service"
+	v1 "github.com/hoangNguyenDev3/WanderSphere/internal/app/webapp/v1"
 )
 
-type WebService struct {
-	authpostClient pb_authpost.AuthenticationAndPostClient
-	newsfeedClient pb_newsfeed.NewsfeedClient
-}
-
 type WebController struct {
-	webService *WebService
+	webService *service.WebService
 	router     *gin.Engine
 	port       int
 }
@@ -29,13 +20,9 @@ func (wc *WebController) Run() {
 }
 
 func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
-	authpostCient, err := client_authpost.NewClient(cfg.AuthenticateAndPost.Hosts)
+	webService := service.NewWebService(cfg)
 	if err != nil {
 		return nil, err
-	}
-
-	webService := WebService{
-		authpostClient: authpostCient,
 	}
 
 	router := gin.Default()
@@ -47,7 +34,7 @@ func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
 	}
 
 	webController := WebController{
-		webService: webService,
+		webService: *webService,
 		router:     router,
 		port:       cfg.Port,
 	}

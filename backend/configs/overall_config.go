@@ -59,10 +59,11 @@ type NewsfeedConfig struct {
 
 // WebConfig config for the BFF/web-app service.
 type WebConfig struct {
-	Port                int        `yaml:"port"`
-	APIVersions         []string   `yaml:"api_version"`
-	AuthenticateAndPost HostConfig `yaml:"authenticate_and_post"`
-	Newsfeed            HostConfig `yaml:"newsfeed"`
+	Port                int         `yaml:"port"`
+	APIVersions         []string    `yaml:"api_version"`
+	AuthenticateAndPost HostConfig  `yaml:"authenticate_and_post"`
+	Newsfeed            HostConfig  `yaml:"newsfeed"`
+	Redis               RedisConfig `yaml:"redis"`
 }
 
 // HostConfig holds a list of host:port strings.

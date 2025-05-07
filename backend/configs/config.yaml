@@ -33,3 +33,4 @@ web_config:
   newsfeed:
     hosts:
       - "localhost:19002"
+  redis: *REDIS
