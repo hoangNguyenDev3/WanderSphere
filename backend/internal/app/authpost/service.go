@@ -1,200 +1,12 @@
 package authpost
 
 import (
-	"context"
-	"errors"
-
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
-	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/auth"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
-
-func (a *AuthenticateAndPostService) CreateUser(ctx context.Context, info *pb_aap.UserDetailInfo) (*pb_aap.UserResult, error) {
-	existed, _ := a.checkUserName(info.GetUserName())
-	if existed {
-		return nil, errors.New("user already exist")
-	}
-
-	salt, err := auth.GenerateRandomSalt()
-	if err != nil {
-		return nil, err
-	}
-
-	hashed_password, err := auth.HashPassword(info.GetUserPassword(), salt)
-	if err != nil {
-		return nil, err
-	}
-
-	err = a.db.Exec(
-		"insert into user (id, hashed_password, salt, first_name, last_name, dob, email, user_name) values (null, ?, ?, ?, ?, FROM_UNIXTIME(?), ?, ?)",
-		hashed_password,
-		salt,
-		info.GetFirstName(),
-		info.GetLastName(),
-		info.GetDob(),
-		info.GetEmail(),
-		info.GetUserName(),
-	).Error
-	if err != nil {
-		return nil, err
-	}
-
-	// Return the necessary user information
-	_, userModel := a.checkUserName(info.GetUserName())
-	return a.NewUserResult(userModel), nil
-}
-
-func (a *AuthenticateAndPostService) CheckUserAuthentication(ctx context.Context, info *pb_aap.UserInfo) (*pb_aap.UserResult, error) {
-	// Find user in the database using the provided information
-	existed, userModel := a.checkUserName(info.GetUserName())
-	if !existed {
-		return nil, errors.New("user does not exist")
-	}
-
-	// Check password matching
-	err := auth.CheckPasswordHash(userModel.HashedPassword, info.GetUserPassword(), userModel.Salt)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return the necessary user information
-	return a.NewUserResult(userModel), nil
-}
-
-func (a *AuthenticateAndPostService) EditUser(ctx context.Context, info *pb_aap.UserDetailInfo) (*pb_aap.UserResult, error) {
-	// Check if the username which is changing information exists in the database
-	existed, userModel := a.checkUserName(info.GetUserName())
-	if !existed {
-		return nil, errors.New("user does not exist")
-	}
-
-	// If the user exists, edit the information and return
-	var err error
-
-	// Edit password
-	if info.GetUserPassword() != "" {
-		salt, err := auth.GenerateRandomSalt()
-		if err != nil {
-			return nil, err
-		}
-
-		hashed_password, err := auth.HashPassword(info.GetUserPassword(), salt)
-		if err != nil {
-			return nil, err
-		}
-
-		err = a.db.Exec("update user set hashed_password = ?, salt = ? where id = ?", hashed_password, salt, userModel.ID).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Edit first_name
-	if info.GetFirstName() != "" {
-		err = a.db.Exec("update user set first_name = ? where id = ?", info.GetFirstName(), userModel.ID).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Edit last_name
-	if info.GetLastName() != "" {
-		err = a.db.Exec("update user set last_name = ? where id = ?", info.GetLastName(), userModel.ID).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Edit dob
-	if info.GetDob() >= -2208988800 { // 1900-01-01
-		err = a.db.Exec("update user set dob = FROM_UNIXTIME(?) where id = ?", info.GetDob(), userModel.ID).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Edit email
-	if info.GetEmail() != "" {
-		err = a.db.Exec("update user set email = ? where id = ?", info.GetEmail(), userModel.ID).Error
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Return the necessary user information
-	_, userModel = a.checkUserName(info.GetUserName())
-	return a.NewUserResult(userModel), nil
-}
-
-func (a *AuthenticateAndPostService) GetUserFollower(ctx context.Context, info *pb_aap.UserInfo) (*pb_aap.UserFollower, error) {
-	// Check if the username which is changing information exists in the database
-	existed, userModel := a.checkUserId(info.GetUserId())
-	if !existed {
-		return nil, errors.New("user does not exist")
-	}
-
-	// If the user exists, return the followers
-	var followers []types.User
-	err := a.db.Raw("select u.* from following f join user u on f.follower_id = u.id where f.user_id = ?", userModel.ID).Scan(&followers).Error
-	if err != nil {
-		return nil, err
-	}
-
-	returnUserFolower := pb_aap.UserFollower{}
-	for _, follower := range followers {
-		followerInfo := pb_aap.UserInfo{UserId: follower.ID, UserName: follower.UserName}
-		returnUserFolower.Followers = append(returnUserFolower.Followers, &followerInfo)
-	}
-
-	return &returnUserFolower, nil
-}
-
-func (a *AuthenticateAndPostService) FollowUser(ctx context.Context, info *pb_aap.UserAndFollower) (*pb_aap.ActionResult, error) {
-	// Check if the user exists
-	existed, _ := a.checkUserId(info.GetUser().GetUserId())
-	if !existed {
-		return nil, errors.New("user does not exist")
-	}
-
-	// Check if the follower exists
-	existed, _ = a.checkUserId(info.GetFollower().GetUserId())
-	if !existed {
-		return nil, errors.New("follower does not exist")
-	}
-
-	// Execute the follow command
-	err := a.db.Exec("insert into following (user_id, follower_id) values (?, ?)", info.GetUser().UserId, info.GetFollower().GetUserId()).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb_aap.ActionResult{Status: pb_aap.ActionStatus_SUCCEEDED}, nil
-}
-
-func (a *AuthenticateAndPostService) UnfollowUser(ctx context.Context, info *pb_aap.UserAndFollower) (*pb_aap.ActionResult, error) {
-	// Check if the user exists
-	existed, _ := a.checkUserId(info.GetUser().GetUserId())
-	if !existed {
-		return nil, errors.New("user does not exist")
-	}
-
-	// Check if the follower exists
-	existed, _ = a.checkUserId(info.GetFollower().GetUserId())
-	if !existed {
-		return nil, errors.New("follower does not exist")
-	}
-
-	// Execute the unfollow command
-	err := a.db.Exec("delete from following where user_id = ? and follower_id = ?", info.GetUser().UserId, info.GetFollower().GetUserId()).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return &pb_aap.ActionResult{Status: pb_aap.ActionStatus_SUCCEEDED}, nil
-}
 
 type AuthenticateAndPostService struct {
 	pb_aap.UnimplementedAuthenticateAndPostServer
@@ -236,6 +48,17 @@ func (a *AuthenticateAndPostService) checkUserId(userId int64) (bool, types.User
 	return true, userModel
 }
 
+// checkPostId checks if an user with provided userId exists in database
+func (a *AuthenticateAndPostService) checkPostId(postId int64) (bool, types.Post) {
+	var postModel = types.Post{}
+	a.db.Raw("select * from `post` where id = ?", postId).Scan(&postModel)
+
+	if postModel.ID == 0 {
+		return false, types.Post{}
+	}
+	return true, postModel
+}
+
 func (a *AuthenticateAndPostService) NewUserResult(userModel types.User) *pb_aap.UserResult {
 	return &pb_aap.UserResult{
 		Status: pb_aap.UserStatus_OK,
@@ -249,4 +72,8 @@ func (a *AuthenticateAndPostService) NewUserResult(userModel types.User) *pb_aap
 			Email:        userModel.Email,
 		},
 	}
+}
+
+func (a *AuthenticateAndPostService) NewActionResult(status pb_aap.ActionStatus) *pb_aap.ActionResult {
+	return &pb_aap.ActionResult{Status: status}
 }
