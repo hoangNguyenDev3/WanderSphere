@@ -6,7 +6,8 @@ postgres: &POSTGRES
   dontSupportRenameIndex: true
   skipInitializeWithVersion: false
 redis: &REDIS
-  addr: redis:6379
+  addr: "localhost:6379"
+  password: "2511"
 
 # Configuration for aap service connection
 authenticate_and_post_config: &AAP
@@ -26,5 +27,5 @@ web_config:
   port: 19003
   api_version: ["v1"]
   authenticate_and_post:
-    hosts: ["aap:19001"]
+    hosts: ["localhost:19001"]
   redis: *REDIS
