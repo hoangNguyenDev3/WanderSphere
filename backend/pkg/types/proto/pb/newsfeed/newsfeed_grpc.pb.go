@@ -4,7 +4,7 @@
 // - protoc             v3.21.12
 // source: newsfeed.proto
 
-package __newsfeed
+package newsfeed
 
 import (
 	context "context"

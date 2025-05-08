@@ -1,16 +1,22 @@
 package authpost
 
 import (
+	"errors"
+	"log"
+	"os"
+
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	"github.com/segmentio/kafka-go"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type AuthenticateAndPostService struct {
 	pb_aap.UnimplementedAuthenticateAndPostServer
-	db *gorm.DB
+	db          *gorm.DB
+	kafkaWriter *kafka.Writer
 }
 
 func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*AuthenticateAndPostService, error) {
@@ -23,7 +29,17 @@ func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*Aut
 		return &AuthenticateAndPostService{}, err
 	}
 
-	return &AuthenticateAndPostService{db: db}, err
+	// Connect to kafka
+	kafkaWriter := kafka.NewWriter(kafka.WriterConfig{
+		Brokers: cfg.Kafka.Brokers,
+		Topic:   cfg.Kafka.Topic,
+		Logger:  log.New(os.Stdout, "kafka writer: ", 0),
+	})
+	if kafkaWriter == nil {
+		return nil, errors.New("failed connecting to kafka writer")
+	}
+
+	return &AuthenticateAndPostService{db: db, kafkaWriter: kafkaWriter}, nil
 }
 
 // checkUserName checks if an user with provided username exists in database
@@ -63,7 +79,7 @@ func (a *AuthenticateAndPostService) NewUserResult(userModel types.User) *pb_aap
 	return &pb_aap.UserResult{
 		Status: pb_aap.UserStatus_OK,
 		Info: &pb_aap.UserDetailInfo{
-			UserId:       userModel.ID,
+			Id:           userModel.ID,
 			UserName:     userModel.UserName,
 			UserPassword: "",
 			FirstName:    userModel.FirstName,

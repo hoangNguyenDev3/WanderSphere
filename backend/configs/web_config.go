@@ -1,9 +1,10 @@
 package configs
 
 func GetWebConfig(cfgPath string) (*WebConfig, error) {
-	cfg, err := ParseConfig(cfgPath)
+	config, err := parseConfig(cfgPath)
 	if err != nil {
-		return nil, err
+		return &WebConfig{}, err
 	}
-	return &cfg.WebConfig, nil
+
+	return &config.Web, nil
 }

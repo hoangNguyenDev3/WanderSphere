@@ -3,12 +3,12 @@ package service
 import (
 	"errors"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
-	client_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/authpost"
 
+	client_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/authpost"
+	client_nf "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/newsfeed"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	pb_nf "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed"
 )
@@ -27,6 +27,11 @@ func NewWebService(conf *configs.WebConfig) (*WebService, error) {
 		return nil, err
 	}
 
+	nfClient, err := client_nf.NewClient(conf.Newsfeed.Hosts)
+	if err != nil {
+		return nil, err
+	}
+
 	redisClient := redis.NewClient(&redis.Options{Addr: conf.Redis.Addr, Password: conf.Redis.Password})
 	if redisClient == nil {
 		return nil, errors.New("redis connection failed")
@@ -34,25 +39,7 @@ func NewWebService(conf *configs.WebConfig) (*WebService, error) {
 
 	return &WebService{
 		AuthenticateAndPostClient: aapClient,
+		NewsfeedClient:            nfClient,
 		RedisClient:               redisClient,
 	}, nil
-}
-
-func (svc *WebService) checkSessionAuthentication(ctx *gin.Context) (sessionId string, userId int, userName string, err error) {
-	sessionId, err = ctx.Cookie("session_id")
-	if err != nil {
-		return "", 0, "", err
-	}
-
-	userId, err = svc.RedisClient.HGet(svc.RedisClient.Context(), sessionId, "userId").Int()
-	if err != nil {
-		return "", 0, "", err
-	}
-
-	userName, err = svc.RedisClient.HGet(svc.RedisClient.Context(), sessionId, "userName").Result()
-	if err != nil {
-		return "", 0, "", err
-	}
-
-	return sessionId, userId, userName, nil
 }

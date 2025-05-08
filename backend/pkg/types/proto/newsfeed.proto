@@ -1,6 +1,8 @@
 syntax = "proto3";
-option go_package = ".newsfeed";
+option go_package = "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed";
 package newsfeed;
+
+import "authpost.proto";
 
 service Newsfeed {
     rpc GetNewsfeed(NewsfeedRequest) returns (NewsfeedResponse) {}
@@ -11,5 +13,5 @@ message NewsfeedRequest {
 }
 
 message NewsfeedResponse {
-    repeated int64 post_id = 1;
+    repeated authpost.PostDetailInfo posts = 1;
 }

@@ -6,58 +6,64 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func ParseConfig(cfgPath string) (*Config, error) {
-	// Read config file
-	data, err := ioutil.ReadFile(cfgPath)
+func parseConfig(cfgPath string) (*Config, error) {
+	// Read the YAML file
+	yamlFile, err := ioutil.ReadFile(cfgPath)
 	if err != nil {
-		return nil, err
+		return &Config{}, err
 	}
-	// Unmarshal config
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
+
+	// Parse the YAML data into a struct
+	var config Config
+	err = yaml.Unmarshal(yamlFile, &config)
+	if err != nil {
+		return &Config{}, err
 	}
-	return &cfg, nil
+
+	return &config, nil
 }
 
-// Config mirrors the config.yaml file
 type Config struct {
-	Postgres            PostgresConfig            `yaml:"postgres"`
+	MySQL               MySQLConfig               `yaml:"mysql"`
 	Redis               RedisConfig               `yaml:"redis"`
 	AuthenticateAndPost AuthenticateAndPostConfig `yaml:"authenticate_and_post_config"`
 	Newsfeed            NewsfeedConfig            `yaml:"newsfeed_config"`
-	WebConfig           WebConfig                 `yaml:"web_config"`
+	Web                 WebConfig                 `yaml:"web_config"`
 }
 
-// PostgresConfig holds the shared PostgreSQL settings.
-type PostgresConfig struct {
-	DSN         string `yaml:"dsn"`
-	MaxPoolSize int    `yaml:"max_pool_size"`
-	MinPoolSize int    `yaml:"min_pool_size"`
-	SearchPath  string `yaml:"search_path"`
+type MySQLConfig struct {
+	DSN                       string `yaml:"dsn"`
+	DefaultStringSize         int    `yaml:"defaultStringSize"`
+	DisableDatetimePrecision  bool   `yaml:"disableDatetimePrecision"`
+	DontSupportRenameIndex    bool   `yaml:"dontSupportRenameIndex"`
+	SkipInitializeWithVersion bool   `yaml:"skipInitializeWithVersion"`
 }
 
-// RedisConfig holds Redis connection info.
 type RedisConfig struct {
 	Addr     string `yaml:"addr"`
 	Password string `yaml:"password"`
 }
 
-// AuthenticateAndPostConfig config for the auth+post service.
+type KafkaConfig struct {
+	Topic   string   `yaml:"topic"`
+	Brokers []string `yaml:"brokers"`
+}
+
 type AuthenticateAndPostConfig struct {
-	Port     int            `yaml:"port"`
-	Postgres PostgresConfig `yaml:"postgres"`
-	Redis    RedisConfig    `yaml:"redis"`
+	Port  int         `yaml:"port"`
+	MySQL MySQLConfig `yaml:"mysql"`
+	Redis RedisConfig `yaml:"redis"`
+	Kafka KafkaConfig `yaml:"kafka"`
 }
 
-// NewsfeedConfig config for the newsfeed service.
 type NewsfeedConfig struct {
-	Port     int            `yaml:"port"`
-	Postgres PostgresConfig `yaml:"postgres"`
-	Redis    RedisConfig    `yaml:"redis"`
+	Port                int         `yaml:"port"`
+	MySQL               MySQLConfig `yaml:"mysql"`
+	Redis               RedisConfig `yaml:"redis"`
+	Kafka               KafkaConfig `yaml:"kafka"`
+	AuthenticateAndPost HostConfig  `yaml:"authenticate_and_post"`
 }
 
-// WebConfig config for the BFF/web-app service.
 type WebConfig struct {
 	Port                int         `yaml:"port"`
 	APIVersions         []string    `yaml:"api_version"`
@@ -66,7 +72,6 @@ type WebConfig struct {
 	Redis               RedisConfig `yaml:"redis"`
 }
 
-// HostConfig holds a list of host:port strings.
 type HostConfig struct {
 	Hosts []string `yaml:"hosts"`
 }

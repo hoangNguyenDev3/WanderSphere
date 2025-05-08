@@ -4,9 +4,10 @@
 // 	protoc        v3.21.12
 // source: newsfeed.proto
 
-package __newsfeed
+package newsfeed
 
 import (
+	authpost "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -66,8 +67,8 @@ func (x *NewsfeedRequest) GetUserId() int64 {
 }
 
 type NewsfeedResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	PostId        []int64                `protobuf:"varint,1,rep,packed,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	state         protoimpl.MessageState     `protogen:"open.v1"`
+	Posts         []*authpost.PostDetailInfo `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -102,9 +103,9 @@ func (*NewsfeedResponse) Descriptor() ([]byte, []int) {
 	return file_newsfeed_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *NewsfeedResponse) GetPostId() []int64 {
+func (x *NewsfeedResponse) GetPosts() []*authpost.PostDetailInfo {
 	if x != nil {
-		return x.PostId
+		return x.Posts
 	}
 	return nil
 }
@@ -113,13 +114,13 @@ var File_newsfeed_proto protoreflect.FileDescriptor
 
 const file_newsfeed_proto_rawDesc = "" +
 	"\n" +
-	"\x0enewsfeed.proto\x12\bnewsfeed\"*\n" +
+	"\x0enewsfeed.proto\x12\bnewsfeed\x1a\x0eauthpost.proto\"*\n" +
 	"\x0fNewsfeedRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"+\n" +
-	"\x10NewsfeedResponse\x12\x17\n" +
-	"\apost_id\x18\x01 \x03(\x03R\x06postId2R\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"B\n" +
+	"\x10NewsfeedResponse\x12.\n" +
+	"\x05posts\x18\x01 \x03(\v2\x18.authpost.PostDetailInfoR\x05posts2R\n" +
 	"\bNewsfeed\x12F\n" +
-	"\vGetNewsfeed\x12\x19.newsfeed.NewsfeedRequest\x1a\x1a.newsfeed.NewsfeedResponse\"\x00B\vZ\t.newsfeedb\x06proto3"
+	"\vGetNewsfeed\x12\x19.newsfeed.NewsfeedRequest\x1a\x1a.newsfeed.NewsfeedResponse\"\x00BMZKgithub.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeedb\x06proto3"
 
 var (
 	file_newsfeed_proto_rawDescOnce sync.Once
@@ -135,17 +136,19 @@ func file_newsfeed_proto_rawDescGZIP() []byte {
 
 var file_newsfeed_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_newsfeed_proto_goTypes = []any{
-	(*NewsfeedRequest)(nil),  // 0: newsfeed.NewsfeedRequest
-	(*NewsfeedResponse)(nil), // 1: newsfeed.NewsfeedResponse
+	(*NewsfeedRequest)(nil),         // 0: newsfeed.NewsfeedRequest
+	(*NewsfeedResponse)(nil),        // 1: newsfeed.NewsfeedResponse
+	(*authpost.PostDetailInfo)(nil), // 2: authpost.PostDetailInfo
 }
 var file_newsfeed_proto_depIdxs = []int32{
-	0, // 0: newsfeed.Newsfeed.GetNewsfeed:input_type -> newsfeed.NewsfeedRequest
-	1, // 1: newsfeed.Newsfeed.GetNewsfeed:output_type -> newsfeed.NewsfeedResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2, // 0: newsfeed.NewsfeedResponse.posts:type_name -> authpost.PostDetailInfo
+	0, // 1: newsfeed.Newsfeed.GetNewsfeed:input_type -> newsfeed.NewsfeedRequest
+	1, // 2: newsfeed.Newsfeed.GetNewsfeed:output_type -> newsfeed.NewsfeedResponse
+	2, // [2:3] is the sub-list for method output_type
+	1, // [1:2] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_newsfeed_proto_init() }
