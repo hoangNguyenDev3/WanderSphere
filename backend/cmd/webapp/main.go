@@ -9,18 +9,23 @@ import (
 )
 
 func main() {
-	cfgPath := flag.String("conf", "config.yaml", "path to the config file")
+	// Flags
+	cfgPath := flag.String("conf", "config.yml", "Path to config file for this service")
 
-	cfg, err := configs.ParseConfig(*cfgPath)
+	// Load configurations
+	cfg, err := configs.GetWebConfig(*cfgPath)
 	if err != nil {
-		log.Fatalf("Failed to parse config: %v", err)
-	}
-
-	web_controller, err := webapp.NewWebController(&cfg.WebConfig)
-	if err != nil {
-		log.Fatalf("Failed to create web controller: %v", err)
+		log.Fatalf("failed to parse config: %v", err)
 		return
 	}
 
+	// Create new web controller
+	web_controller, err := webapp.NewWebController(cfg)
+	if err != nil {
+		log.Fatalf("failed to create web controller: %v", err)
+		return
+	}
+
+	// Serve
 	web_controller.Run()
 }
