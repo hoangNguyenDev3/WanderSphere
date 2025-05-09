@@ -22,27 +22,27 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type NewsfeedRequest struct {
+type GetNewsfeedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *NewsfeedRequest) Reset() {
-	*x = NewsfeedRequest{}
+func (x *GetNewsfeedRequest) Reset() {
+	*x = GetNewsfeedRequest{}
 	mi := &file_newsfeed_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *NewsfeedRequest) String() string {
+func (x *GetNewsfeedRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NewsfeedRequest) ProtoMessage() {}
+func (*GetNewsfeedRequest) ProtoMessage() {}
 
-func (x *NewsfeedRequest) ProtoReflect() protoreflect.Message {
+func (x *GetNewsfeedRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_newsfeed_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -54,39 +54,39 @@ func (x *NewsfeedRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NewsfeedRequest.ProtoReflect.Descriptor instead.
-func (*NewsfeedRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetNewsfeedRequest.ProtoReflect.Descriptor instead.
+func (*GetNewsfeedRequest) Descriptor() ([]byte, []int) {
 	return file_newsfeed_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *NewsfeedRequest) GetUserId() int64 {
+func (x *GetNewsfeedRequest) GetUserId() int64 {
 	if x != nil {
 		return x.UserId
 	}
 	return 0
 }
 
-type NewsfeedResponse struct {
+type GetNewsfeedResponse struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
 	Posts         []*authpost.PostDetailInfo `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *NewsfeedResponse) Reset() {
-	*x = NewsfeedResponse{}
+func (x *GetNewsfeedResponse) Reset() {
+	*x = GetNewsfeedResponse{}
 	mi := &file_newsfeed_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *NewsfeedResponse) String() string {
+func (x *GetNewsfeedResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*NewsfeedResponse) ProtoMessage() {}
+func (*GetNewsfeedResponse) ProtoMessage() {}
 
-func (x *NewsfeedResponse) ProtoReflect() protoreflect.Message {
+func (x *GetNewsfeedResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_newsfeed_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -98,12 +98,12 @@ func (x *NewsfeedResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use NewsfeedResponse.ProtoReflect.Descriptor instead.
-func (*NewsfeedResponse) Descriptor() ([]byte, []int) {
+// Deprecated: Use GetNewsfeedResponse.ProtoReflect.Descriptor instead.
+func (*GetNewsfeedResponse) Descriptor() ([]byte, []int) {
 	return file_newsfeed_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *NewsfeedResponse) GetPosts() []*authpost.PostDetailInfo {
+func (x *GetNewsfeedResponse) GetPosts() []*authpost.PostDetailInfo {
 	if x != nil {
 		return x.Posts
 	}
@@ -114,13 +114,13 @@ var File_newsfeed_proto protoreflect.FileDescriptor
 
 const file_newsfeed_proto_rawDesc = "" +
 	"\n" +
-	"\x0enewsfeed.proto\x12\bnewsfeed\x1a\x0eauthpost.proto\"*\n" +
-	"\x0fNewsfeedRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"B\n" +
-	"\x10NewsfeedResponse\x12.\n" +
-	"\x05posts\x18\x01 \x03(\v2\x18.authpost.PostDetailInfoR\x05posts2R\n" +
-	"\bNewsfeed\x12F\n" +
-	"\vGetNewsfeed\x12\x19.newsfeed.NewsfeedRequest\x1a\x1a.newsfeed.NewsfeedResponse\"\x00BMZKgithub.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeedb\x06proto3"
+	"\x0enewsfeed.proto\x12\bnewsfeed\x1a\x0eauthpost.proto\"-\n" +
+	"\x12GetNewsfeedRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"E\n" +
+	"\x13GetNewsfeedResponse\x12.\n" +
+	"\x05posts\x18\x01 \x03(\v2\x18.authpost.PostDetailInfoR\x05posts2X\n" +
+	"\bNewsfeed\x12L\n" +
+	"\vGetNewsfeed\x12\x1c.newsfeed.GetNewsfeedRequest\x1a\x1d.newsfeed.GetNewsfeedResponse\"\x00BMZKgithub.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeedb\x06proto3"
 
 var (
 	file_newsfeed_proto_rawDescOnce sync.Once
@@ -136,14 +136,14 @@ func file_newsfeed_proto_rawDescGZIP() []byte {
 
 var file_newsfeed_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_newsfeed_proto_goTypes = []any{
-	(*NewsfeedRequest)(nil),         // 0: newsfeed.NewsfeedRequest
-	(*NewsfeedResponse)(nil),        // 1: newsfeed.NewsfeedResponse
+	(*GetNewsfeedRequest)(nil),      // 0: newsfeed.GetNewsfeedRequest
+	(*GetNewsfeedResponse)(nil),     // 1: newsfeed.GetNewsfeedResponse
 	(*authpost.PostDetailInfo)(nil), // 2: authpost.PostDetailInfo
 }
 var file_newsfeed_proto_depIdxs = []int32{
-	2, // 0: newsfeed.NewsfeedResponse.posts:type_name -> authpost.PostDetailInfo
-	0, // 1: newsfeed.Newsfeed.GetNewsfeed:input_type -> newsfeed.NewsfeedRequest
-	1, // 2: newsfeed.Newsfeed.GetNewsfeed:output_type -> newsfeed.NewsfeedResponse
+	2, // 0: newsfeed.GetNewsfeedResponse.posts:type_name -> authpost.PostDetailInfo
+	0, // 1: newsfeed.Newsfeed.GetNewsfeed:input_type -> newsfeed.GetNewsfeedRequest
+	1, // 2: newsfeed.Newsfeed.GetNewsfeed:output_type -> newsfeed.GetNewsfeedResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name

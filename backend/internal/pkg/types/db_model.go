@@ -7,43 +7,30 @@ import (
 )
 
 type User struct {
-	ID             int64     `gorm:"column:id;type:bigint;primaryKey;autoIncrement" json:"id"`
-	HashedPassword string    `gorm:"column:hashed_password;type:varchar(1000);not null" json:"hashed_password"`
-	Salt           []byte    `gorm:"column:salt;type:varbinary(1000);not null" json:"salt"`
-	FirstName      string    `gorm:"column:first_name;type:varchar(50);not null" json:"first_name"`
-	LastName       string    `gorm:"column:last_name;type:varchar(50);not null" json:"last_name"`
-	DOB            time.Time `gorm:"column:dob;type:date;not null" json:"dob"`
-	Email          string    `gorm:"column:email;type:varchar(100);unique;not null" json:"email"`
-	UserName       string    `gorm:"column:user_name;type:varchar(50);unique;not null" json:"user_name"`
-
-	Following []*User `gorm:"many2many:following;foreignKey:id;joinForeignKey:user_id;References:id;joinReferences:follower_id"`
-	Follower  []*User `gorm:"many2many:following;foreignKey:id;joinForeignKey:follower_id;References:id;joinReferences:user_id"`
+	gorm.Model
+	HashedPassword string    `gorm:"size:1000;not null" json:"hashed_password"`
+	Salt           []byte    `gorm:"size:1000;not null" json:"salt"`
+	FirstName      string    `gorm:"size:50;not null" json:"first_name"`
+	LastName       string    `gorm:"size:50;not null" json:"last_name"`
+	DateOfBirth    time.Time `gorm:"not null" json:"dob"`
+	Email          string    `gorm:"size:50;not null" json:"email"`
+	UserName       string    `gorm:"size:50;not null" json:"user_name"`
+	Posts          []*Post
+	Followers      []*User `gorm:"many2many:following"`
+	Followings     []*User `gorm:"many2many:following;joinForeignKey:follower_id;joinReferences:user_id"`
 }
 
 func (User) TableName() string {
 	return "user"
 }
 
-type Following struct {
-	UserID     int64 `gorm:"column:user_id;type:bigint;primaryKey" json:"user_id"`
-	FollowerID int64 `gorm:"column:follower_id;type:bigint;primaryKey" json:"follower_id"`
-
-	User     User `gorm:"foreignKey:user_id;references:id"`
-	Follower User `gorm:"foreignKey:follower_id;references:id"`
-}
-
-func (Following) TableName() string {
-	return "following"
-}
-
 type Post struct {
 	gorm.Model
-	UserID           int64  `gorm:"column:user_id;type:bigint;not null" json:"user_id"`
-	ContentText      string `gorm:"column:content_text;type:text(100000);not null" json:"content_text"`
-	ContentImagePath string `gorm:"column:content_image_path;type:text(1000)" json:"content_image_path"`
-	Visible          bool   `gorm:"column:visible;type:boolean;not null" json:"visible"`
-
-	User User `gorm:"foreignKey:user_id;references:id"`
+	ContentText      string `gorm:"size:100000" json:"content_text"`
+	ContentImagePath string `gorm:"size:1000" json:"content_image_path"`
+	UserID           int64  `gorm:"not null" json:"user_id"`
+	Comments         []*Comment
+	LikedUsers       []*User `gorm:"many2many:like"`
 }
 
 func (Post) TableName() string {
@@ -52,29 +39,11 @@ func (Post) TableName() string {
 
 type Comment struct {
 	gorm.Model
-	PostID  int64  `gorm:"column:post_id;type:bigint;not null" json:"post_id"`
-	UserID  int64  `gorm:"column:user_id;type:bigint;not null" json:"user_id"`
-	Content string `gorm:"column:content;type:text(100000);not null" json:"content"`
-
-	Post Post `gorm:"foreignKey:post_id;references:id"`
-	User User `gorm:"foreignKey:user_id;references:id"`
+	ContentText string `gorm:"size:100000;not null" json:"content"`
+	PostID      int64  `gorm:"not null" json:"post_id"`
+	UserID      int64  `gorm:"not null" json:"user_id"`
 }
 
 func (Comment) TableName() string {
 	return "comment"
-}
-
-type Like struct {
-	PostID    int64     `gorm:"column:post_id;type:bigint;primaryKey" json:"post_id"`
-	UserID    int64     `gorm:"column:user_id;type:bigint;primaryKey" json:"user_id"`
-	CreatedAt time.Time `gorm:"column:created_at;type:timestamp;not null;default:current_timestamp" json:"created_at"`
-	UpdatedAt time.Time `gorm:"column:updated_at;type:timestamp;not null;default:current_timestamp" json:"updated_at"`
-	DeletedAt time.Time `gorm:"column:deleted_at;type:timestamp;not null;default:current_timestamp" json:"deleted_at"`
-
-	Post Post `gorm:"foreignKey:post_id;references:id"`
-	User User `gorm:"foreignKey:user_id;references:id"`
-}
-
-func (Like) TableName() string {
-	return "like"
 }

@@ -1,4 +1,5 @@
-DROP TRIGGER IF EXISTS `delete_post`;
+USE wander_sphere;
+
 DROP TABLE IF EXISTS `following`;
 DROP TABLE IF EXISTS `like`;
 DROP TABLE IF EXISTS `comment`;

@@ -5,13 +5,13 @@ package newsfeed;
 import "authpost.proto";
 
 service Newsfeed {
-    rpc GetNewsfeed(NewsfeedRequest) returns (NewsfeedResponse) {}
+    rpc GetNewsfeed(GetNewsfeedRequest) returns (GetNewsfeedResponse) {}
 }
 
-message NewsfeedRequest {
+message GetNewsfeedRequest {
     int64 user_id = 1;
 }
 
-message NewsfeedResponse {
-    repeated authpost.PostDetailInfo posts = 1;
+message GetNewsfeedResponse {
+    repeated authpost.PostDetailInfo  posts = 1;
 }
