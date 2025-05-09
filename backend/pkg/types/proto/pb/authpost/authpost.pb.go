@@ -301,7 +301,7 @@ func (x GetUserFollowingResponse_GetUserFollowingStatus) Number() protoreflect.E
 
 // Deprecated: Use GetUserFollowingResponse_GetUserFollowingStatus.Descriptor instead.
 func (GetUserFollowingResponse_GetUserFollowingStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{13, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{12, 0}
 }
 
 type FollowUserResponse_FollowUserStatus int32
@@ -350,7 +350,7 @@ func (x FollowUserResponse_FollowUserStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FollowUserResponse_FollowUserStatus.Descriptor instead.
 func (FollowUserResponse_FollowUserStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{15, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{14, 0}
 }
 
 type UnfollowUserResponse_UnfollowUserStatus int32
@@ -399,7 +399,7 @@ func (x UnfollowUserResponse_UnfollowUserStatus) Number() protoreflect.EnumNumbe
 
 // Deprecated: Use UnfollowUserResponse_UnfollowUserStatus.Descriptor instead.
 func (UnfollowUserResponse_UnfollowUserStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{17, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{16, 0}
 }
 
 type GetUserPostsResponse_GetUserPostsStatus int32
@@ -445,7 +445,7 @@ func (x GetUserPostsResponse_GetUserPostsStatus) Number() protoreflect.EnumNumbe
 
 // Deprecated: Use GetUserPostsResponse_GetUserPostsStatus.Descriptor instead.
 func (GetUserPostsResponse_GetUserPostsStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{19, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{18, 0}
 }
 
 type CreatePostResponse_CreatePostStatus int32
@@ -491,7 +491,7 @@ func (x CreatePostResponse_CreatePostStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CreatePostResponse_CreatePostStatus.Descriptor instead.
 func (CreatePostResponse_CreatePostStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{22, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{20, 0}
 }
 
 type GetPostDetailInfoResponse_GetPostDetailInfoStatus int32
@@ -537,7 +537,7 @@ func (x GetPostDetailInfoResponse_GetPostDetailInfoStatus) Number() protoreflect
 
 // Deprecated: Use GetPostDetailInfoResponse_GetPostDetailInfoStatus.Descriptor instead.
 func (GetPostDetailInfoResponse_GetPostDetailInfoStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{24, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{22, 0}
 }
 
 type EditPostResponse_EditPostStatus int32
@@ -589,7 +589,7 @@ func (x EditPostResponse_EditPostStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EditPostResponse_EditPostStatus.Descriptor instead.
 func (EditPostResponse_EditPostStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{26, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{24, 0}
 }
 
 type DeletePostResponse_DeletePostStatus int32
@@ -641,7 +641,7 @@ func (x DeletePostResponse_DeletePostStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DeletePostResponse_DeletePostStatus.Descriptor instead.
 func (DeletePostResponse_DeletePostStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{28, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{26, 0}
 }
 
 type CommentPostResponse_CommentPostStatus int32
@@ -690,7 +690,7 @@ func (x CommentPostResponse_CommentPostStatus) Number() protoreflect.EnumNumber 
 
 // Deprecated: Use CommentPostResponse_CommentPostStatus.Descriptor instead.
 func (CommentPostResponse_CommentPostStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{30, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{28, 0}
 }
 
 type LikePostResponse_LikePostStatus int32
@@ -739,7 +739,7 @@ func (x LikePostResponse_LikePostStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use LikePostResponse_LikePostStatus.Descriptor instead.
 func (LikePostResponse_LikePostStatus) EnumDescriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{32, 0}
+	return file_authpost_proto_rawDescGZIP(), []int{30, 0}
 }
 
 type CheckUserAuthenticationRequest struct {
@@ -1329,7 +1329,7 @@ func (x *GetUserFollowerRequest) GetUserId() int64 {
 type GetUserFollowerResponse struct {
 	state         protoimpl.MessageState                        `protogen:"open.v1"`
 	Status        GetUserFollowerResponse_GetUserFollowerStatus `protobuf:"varint,1,opt,name=status,proto3,enum=authpost.GetUserFollowerResponse_GetUserFollowerStatus" json:"status,omitempty"`
-	Followers     []*UserInfo                                   `protobuf:"bytes,2,rep,name=followers,proto3" json:"followers,omitempty"`
+	FollowersIds  []int64                                       `protobuf:"varint,2,rep,packed,name=followersIds,proto3" json:"followersIds,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1371,63 +1371,11 @@ func (x *GetUserFollowerResponse) GetStatus() GetUserFollowerResponse_GetUserFol
 	return GetUserFollowerResponse_OK
 }
 
-func (x *GetUserFollowerResponse) GetFollowers() []*UserInfo {
+func (x *GetUserFollowerResponse) GetFollowersIds() []int64 {
 	if x != nil {
-		return x.Followers
+		return x.FollowersIds
 	}
 	return nil
-}
-
-type UserInfo struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserName      string                 `protobuf:"bytes,1,opt,name=user_name,json=userName,proto3" json:"user_name,omitempty"`
-	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *UserInfo) Reset() {
-	*x = UserInfo{}
-	mi := &file_authpost_proto_msgTypes[11]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *UserInfo) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*UserInfo) ProtoMessage() {}
-
-func (x *UserInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[11]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use UserInfo.ProtoReflect.Descriptor instead.
-func (*UserInfo) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *UserInfo) GetUserName() string {
-	if x != nil {
-		return x.UserName
-	}
-	return ""
-}
-
-func (x *UserInfo) GetUserId() int64 {
-	if x != nil {
-		return x.UserId
-	}
-	return 0
 }
 
 type GetUserFollowingRequest struct {
@@ -1439,7 +1387,7 @@ type GetUserFollowingRequest struct {
 
 func (x *GetUserFollowingRequest) Reset() {
 	*x = GetUserFollowingRequest{}
-	mi := &file_authpost_proto_msgTypes[12]
+	mi := &file_authpost_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1451,7 +1399,7 @@ func (x *GetUserFollowingRequest) String() string {
 func (*GetUserFollowingRequest) ProtoMessage() {}
 
 func (x *GetUserFollowingRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[12]
+	mi := &file_authpost_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1464,7 +1412,7 @@ func (x *GetUserFollowingRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserFollowingRequest.ProtoReflect.Descriptor instead.
 func (*GetUserFollowingRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{12}
+	return file_authpost_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GetUserFollowingRequest) GetUserId() int64 {
@@ -1477,14 +1425,14 @@ func (x *GetUserFollowingRequest) GetUserId() int64 {
 type GetUserFollowingResponse struct {
 	state         protoimpl.MessageState                          `protogen:"open.v1"`
 	Status        GetUserFollowingResponse_GetUserFollowingStatus `protobuf:"varint,1,opt,name=status,proto3,enum=authpost.GetUserFollowingResponse_GetUserFollowingStatus" json:"status,omitempty"`
-	Followings    []*UserInfo                                     `protobuf:"bytes,2,rep,name=followings,proto3" json:"followings,omitempty"`
+	FollowingsIds []int64                                         `protobuf:"varint,2,rep,packed,name=followingsIds,proto3" json:"followingsIds,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetUserFollowingResponse) Reset() {
 	*x = GetUserFollowingResponse{}
-	mi := &file_authpost_proto_msgTypes[13]
+	mi := &file_authpost_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1496,7 +1444,7 @@ func (x *GetUserFollowingResponse) String() string {
 func (*GetUserFollowingResponse) ProtoMessage() {}
 
 func (x *GetUserFollowingResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[13]
+	mi := &file_authpost_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1509,7 +1457,7 @@ func (x *GetUserFollowingResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserFollowingResponse.ProtoReflect.Descriptor instead.
 func (*GetUserFollowingResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{13}
+	return file_authpost_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetUserFollowingResponse) GetStatus() GetUserFollowingResponse_GetUserFollowingStatus {
@@ -1519,9 +1467,9 @@ func (x *GetUserFollowingResponse) GetStatus() GetUserFollowingResponse_GetUserF
 	return GetUserFollowingResponse_OK
 }
 
-func (x *GetUserFollowingResponse) GetFollowings() []*UserInfo {
+func (x *GetUserFollowingResponse) GetFollowingsIds() []int64 {
 	if x != nil {
-		return x.Followings
+		return x.FollowingsIds
 	}
 	return nil
 }
@@ -1536,7 +1484,7 @@ type FollowUserRequest struct {
 
 func (x *FollowUserRequest) Reset() {
 	*x = FollowUserRequest{}
-	mi := &file_authpost_proto_msgTypes[14]
+	mi := &file_authpost_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1548,7 +1496,7 @@ func (x *FollowUserRequest) String() string {
 func (*FollowUserRequest) ProtoMessage() {}
 
 func (x *FollowUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[14]
+	mi := &file_authpost_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1561,7 +1509,7 @@ func (x *FollowUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FollowUserRequest.ProtoReflect.Descriptor instead.
 func (*FollowUserRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{14}
+	return file_authpost_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *FollowUserRequest) GetUserId() int64 {
@@ -1587,7 +1535,7 @@ type FollowUserResponse struct {
 
 func (x *FollowUserResponse) Reset() {
 	*x = FollowUserResponse{}
-	mi := &file_authpost_proto_msgTypes[15]
+	mi := &file_authpost_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1599,7 +1547,7 @@ func (x *FollowUserResponse) String() string {
 func (*FollowUserResponse) ProtoMessage() {}
 
 func (x *FollowUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[15]
+	mi := &file_authpost_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1612,7 +1560,7 @@ func (x *FollowUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FollowUserResponse.ProtoReflect.Descriptor instead.
 func (*FollowUserResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{15}
+	return file_authpost_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *FollowUserResponse) GetStatus() FollowUserResponse_FollowUserStatus {
@@ -1632,7 +1580,7 @@ type UnfollowUserRequest struct {
 
 func (x *UnfollowUserRequest) Reset() {
 	*x = UnfollowUserRequest{}
-	mi := &file_authpost_proto_msgTypes[16]
+	mi := &file_authpost_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1644,7 +1592,7 @@ func (x *UnfollowUserRequest) String() string {
 func (*UnfollowUserRequest) ProtoMessage() {}
 
 func (x *UnfollowUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[16]
+	mi := &file_authpost_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1657,7 +1605,7 @@ func (x *UnfollowUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnfollowUserRequest.ProtoReflect.Descriptor instead.
 func (*UnfollowUserRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{16}
+	return file_authpost_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *UnfollowUserRequest) GetUserId() int64 {
@@ -1683,7 +1631,7 @@ type UnfollowUserResponse struct {
 
 func (x *UnfollowUserResponse) Reset() {
 	*x = UnfollowUserResponse{}
-	mi := &file_authpost_proto_msgTypes[17]
+	mi := &file_authpost_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1695,7 +1643,7 @@ func (x *UnfollowUserResponse) String() string {
 func (*UnfollowUserResponse) ProtoMessage() {}
 
 func (x *UnfollowUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[17]
+	mi := &file_authpost_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1708,7 +1656,7 @@ func (x *UnfollowUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UnfollowUserResponse.ProtoReflect.Descriptor instead.
 func (*UnfollowUserResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{17}
+	return file_authpost_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *UnfollowUserResponse) GetStatus() UnfollowUserResponse_UnfollowUserStatus {
@@ -1727,7 +1675,7 @@ type GetUserPostsRequest struct {
 
 func (x *GetUserPostsRequest) Reset() {
 	*x = GetUserPostsRequest{}
-	mi := &file_authpost_proto_msgTypes[18]
+	mi := &file_authpost_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1739,7 +1687,7 @@ func (x *GetUserPostsRequest) String() string {
 func (*GetUserPostsRequest) ProtoMessage() {}
 
 func (x *GetUserPostsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[18]
+	mi := &file_authpost_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1752,7 +1700,7 @@ func (x *GetUserPostsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserPostsRequest.ProtoReflect.Descriptor instead.
 func (*GetUserPostsRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{18}
+	return file_authpost_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GetUserPostsRequest) GetUserId() int64 {
@@ -1765,14 +1713,14 @@ func (x *GetUserPostsRequest) GetUserId() int64 {
 type GetUserPostsResponse struct {
 	state         protoimpl.MessageState                  `protogen:"open.v1"`
 	Status        GetUserPostsResponse_GetUserPostsStatus `protobuf:"varint,1,opt,name=status,proto3,enum=authpost.GetUserPostsResponse_GetUserPostsStatus" json:"status,omitempty"`
-	Posts         []*PostInfo                             `protobuf:"bytes,2,rep,name=posts,proto3" json:"posts,omitempty"`
+	PostsIds      []int64                                 `protobuf:"varint,2,rep,packed,name=posts_ids,json=postsIds,proto3" json:"posts_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetUserPostsResponse) Reset() {
 	*x = GetUserPostsResponse{}
-	mi := &file_authpost_proto_msgTypes[19]
+	mi := &file_authpost_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1784,7 +1732,7 @@ func (x *GetUserPostsResponse) String() string {
 func (*GetUserPostsResponse) ProtoMessage() {}
 
 func (x *GetUserPostsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[19]
+	mi := &file_authpost_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1797,7 +1745,7 @@ func (x *GetUserPostsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserPostsResponse.ProtoReflect.Descriptor instead.
 func (*GetUserPostsResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{19}
+	return file_authpost_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *GetUserPostsResponse) GetStatus() GetUserPostsResponse_GetUserPostsStatus {
@@ -1807,93 +1755,9 @@ func (x *GetUserPostsResponse) GetStatus() GetUserPostsResponse_GetUserPostsStat
 	return GetUserPostsResponse_OK
 }
 
-func (x *GetUserPostsResponse) GetPosts() []*PostInfo {
+func (x *GetUserPostsResponse) GetPostsIds() []int64 {
 	if x != nil {
-		return x.Posts
-	}
-	return nil
-}
-
-type PostInfo struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	PostId           int64                  `protobuf:"varint,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
-	UserId           int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	ContentText      string                 `protobuf:"bytes,3,opt,name=content_text,json=contentText,proto3" json:"content_text,omitempty"`
-	ContentImagePath []string               `protobuf:"bytes,4,rep,name=content_image_path,json=contentImagePath,proto3" json:"content_image_path,omitempty"`
-	Visible          bool                   `protobuf:"varint,5,opt,name=visible,proto3" json:"visible,omitempty"`
-	CreatedAt        *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *PostInfo) Reset() {
-	*x = PostInfo{}
-	mi := &file_authpost_proto_msgTypes[20]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PostInfo) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PostInfo) ProtoMessage() {}
-
-func (x *PostInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[20]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use PostInfo.ProtoReflect.Descriptor instead.
-func (*PostInfo) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{20}
-}
-
-func (x *PostInfo) GetPostId() int64 {
-	if x != nil {
-		return x.PostId
-	}
-	return 0
-}
-
-func (x *PostInfo) GetUserId() int64 {
-	if x != nil {
-		return x.UserId
-	}
-	return 0
-}
-
-func (x *PostInfo) GetContentText() string {
-	if x != nil {
-		return x.ContentText
-	}
-	return ""
-}
-
-func (x *PostInfo) GetContentImagePath() []string {
-	if x != nil {
-		return x.ContentImagePath
-	}
-	return nil
-}
-
-func (x *PostInfo) GetVisible() bool {
-	if x != nil {
-		return x.Visible
-	}
-	return false
-}
-
-func (x *PostInfo) GetCreatedAt() *timestamppb.Timestamp {
-	if x != nil {
-		return x.CreatedAt
+		return x.PostsIds
 	}
 	return nil
 }
@@ -1910,7 +1774,7 @@ type CreatePostRequest struct {
 
 func (x *CreatePostRequest) Reset() {
 	*x = CreatePostRequest{}
-	mi := &file_authpost_proto_msgTypes[21]
+	mi := &file_authpost_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1922,7 +1786,7 @@ func (x *CreatePostRequest) String() string {
 func (*CreatePostRequest) ProtoMessage() {}
 
 func (x *CreatePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[21]
+	mi := &file_authpost_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1935,7 +1799,7 @@ func (x *CreatePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePostRequest.ProtoReflect.Descriptor instead.
 func (*CreatePostRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{21}
+	return file_authpost_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CreatePostRequest) GetUserId() int64 {
@@ -1976,7 +1840,7 @@ type CreatePostResponse struct {
 
 func (x *CreatePostResponse) Reset() {
 	*x = CreatePostResponse{}
-	mi := &file_authpost_proto_msgTypes[22]
+	mi := &file_authpost_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1988,7 +1852,7 @@ func (x *CreatePostResponse) String() string {
 func (*CreatePostResponse) ProtoMessage() {}
 
 func (x *CreatePostResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[22]
+	mi := &file_authpost_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2001,7 +1865,7 @@ func (x *CreatePostResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePostResponse.ProtoReflect.Descriptor instead.
 func (*CreatePostResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{22}
+	return file_authpost_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CreatePostResponse) GetStatus() CreatePostResponse_CreatePostStatus {
@@ -2027,7 +1891,7 @@ type GetPostDetailInfoRequest struct {
 
 func (x *GetPostDetailInfoRequest) Reset() {
 	*x = GetPostDetailInfoRequest{}
-	mi := &file_authpost_proto_msgTypes[23]
+	mi := &file_authpost_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2039,7 +1903,7 @@ func (x *GetPostDetailInfoRequest) String() string {
 func (*GetPostDetailInfoRequest) ProtoMessage() {}
 
 func (x *GetPostDetailInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[23]
+	mi := &file_authpost_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2052,7 +1916,7 @@ func (x *GetPostDetailInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostDetailInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetPostDetailInfoRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{23}
+	return file_authpost_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *GetPostDetailInfoRequest) GetPostId() int64 {
@@ -2072,7 +1936,7 @@ type GetPostDetailInfoResponse struct {
 
 func (x *GetPostDetailInfoResponse) Reset() {
 	*x = GetPostDetailInfoResponse{}
-	mi := &file_authpost_proto_msgTypes[24]
+	mi := &file_authpost_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2084,7 +1948,7 @@ func (x *GetPostDetailInfoResponse) String() string {
 func (*GetPostDetailInfoResponse) ProtoMessage() {}
 
 func (x *GetPostDetailInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[24]
+	mi := &file_authpost_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2097,7 +1961,7 @@ func (x *GetPostDetailInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPostDetailInfoResponse.ProtoReflect.Descriptor instead.
 func (*GetPostDetailInfoResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{24}
+	return file_authpost_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GetPostDetailInfoResponse) GetStatus() GetPostDetailInfoResponse_GetPostDetailInfoStatus {
@@ -2127,7 +1991,7 @@ type EditPostRequest struct {
 
 func (x *EditPostRequest) Reset() {
 	*x = EditPostRequest{}
-	mi := &file_authpost_proto_msgTypes[25]
+	mi := &file_authpost_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2139,7 +2003,7 @@ func (x *EditPostRequest) String() string {
 func (*EditPostRequest) ProtoMessage() {}
 
 func (x *EditPostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[25]
+	mi := &file_authpost_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2152,7 +2016,7 @@ func (x *EditPostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditPostRequest.ProtoReflect.Descriptor instead.
 func (*EditPostRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{25}
+	return file_authpost_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *EditPostRequest) GetUserId() int64 {
@@ -2199,7 +2063,7 @@ type EditPostResponse struct {
 
 func (x *EditPostResponse) Reset() {
 	*x = EditPostResponse{}
-	mi := &file_authpost_proto_msgTypes[26]
+	mi := &file_authpost_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2211,7 +2075,7 @@ func (x *EditPostResponse) String() string {
 func (*EditPostResponse) ProtoMessage() {}
 
 func (x *EditPostResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[26]
+	mi := &file_authpost_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2224,7 +2088,7 @@ func (x *EditPostResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EditPostResponse.ProtoReflect.Descriptor instead.
 func (*EditPostResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{26}
+	return file_authpost_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *EditPostResponse) GetStatus() EditPostResponse_EditPostStatus {
@@ -2244,7 +2108,7 @@ type DeletePostRequest struct {
 
 func (x *DeletePostRequest) Reset() {
 	*x = DeletePostRequest{}
-	mi := &file_authpost_proto_msgTypes[27]
+	mi := &file_authpost_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2256,7 +2120,7 @@ func (x *DeletePostRequest) String() string {
 func (*DeletePostRequest) ProtoMessage() {}
 
 func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[27]
+	mi := &file_authpost_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2269,7 +2133,7 @@ func (x *DeletePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePostRequest.ProtoReflect.Descriptor instead.
 func (*DeletePostRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{27}
+	return file_authpost_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *DeletePostRequest) GetUserId() int64 {
@@ -2295,7 +2159,7 @@ type DeletePostResponse struct {
 
 func (x *DeletePostResponse) Reset() {
 	*x = DeletePostResponse{}
-	mi := &file_authpost_proto_msgTypes[28]
+	mi := &file_authpost_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2307,7 +2171,7 @@ func (x *DeletePostResponse) String() string {
 func (*DeletePostResponse) ProtoMessage() {}
 
 func (x *DeletePostResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[28]
+	mi := &file_authpost_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2320,7 +2184,7 @@ func (x *DeletePostResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePostResponse.ProtoReflect.Descriptor instead.
 func (*DeletePostResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{28}
+	return file_authpost_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *DeletePostResponse) GetStatus() DeletePostResponse_DeletePostStatus {
@@ -2341,7 +2205,7 @@ type CommentPostRequest struct {
 
 func (x *CommentPostRequest) Reset() {
 	*x = CommentPostRequest{}
-	mi := &file_authpost_proto_msgTypes[29]
+	mi := &file_authpost_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2353,7 +2217,7 @@ func (x *CommentPostRequest) String() string {
 func (*CommentPostRequest) ProtoMessage() {}
 
 func (x *CommentPostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[29]
+	mi := &file_authpost_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2366,7 +2230,7 @@ func (x *CommentPostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommentPostRequest.ProtoReflect.Descriptor instead.
 func (*CommentPostRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{29}
+	return file_authpost_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *CommentPostRequest) GetUserId() int64 {
@@ -2400,7 +2264,7 @@ type CommentPostResponse struct {
 
 func (x *CommentPostResponse) Reset() {
 	*x = CommentPostResponse{}
-	mi := &file_authpost_proto_msgTypes[30]
+	mi := &file_authpost_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2412,7 +2276,7 @@ func (x *CommentPostResponse) String() string {
 func (*CommentPostResponse) ProtoMessage() {}
 
 func (x *CommentPostResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[30]
+	mi := &file_authpost_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2425,7 +2289,7 @@ func (x *CommentPostResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommentPostResponse.ProtoReflect.Descriptor instead.
 func (*CommentPostResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{30}
+	return file_authpost_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *CommentPostResponse) GetStatus() CommentPostResponse_CommentPostStatus {
@@ -2452,7 +2316,7 @@ type LikePostRequest struct {
 
 func (x *LikePostRequest) Reset() {
 	*x = LikePostRequest{}
-	mi := &file_authpost_proto_msgTypes[31]
+	mi := &file_authpost_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2464,7 +2328,7 @@ func (x *LikePostRequest) String() string {
 func (*LikePostRequest) ProtoMessage() {}
 
 func (x *LikePostRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[31]
+	mi := &file_authpost_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2477,7 +2341,7 @@ func (x *LikePostRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikePostRequest.ProtoReflect.Descriptor instead.
 func (*LikePostRequest) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{31}
+	return file_authpost_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *LikePostRequest) GetUserId() int64 {
@@ -2503,7 +2367,7 @@ type LikePostResponse struct {
 
 func (x *LikePostResponse) Reset() {
 	*x = LikePostResponse{}
-	mi := &file_authpost_proto_msgTypes[32]
+	mi := &file_authpost_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2515,7 +2379,7 @@ func (x *LikePostResponse) String() string {
 func (*LikePostResponse) ProtoMessage() {}
 
 func (x *LikePostResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[32]
+	mi := &file_authpost_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2528,7 +2392,7 @@ func (x *LikePostResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LikePostResponse.ProtoReflect.Descriptor instead.
 func (*LikePostResponse) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{32}
+	return file_authpost_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *LikePostResponse) GetStatus() LikePostResponse_LikePostStatus {
@@ -2554,7 +2418,7 @@ type PostDetailInfo struct {
 
 func (x *PostDetailInfo) Reset() {
 	*x = PostDetailInfo{}
-	mi := &file_authpost_proto_msgTypes[33]
+	mi := &file_authpost_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2566,7 +2430,7 @@ func (x *PostDetailInfo) String() string {
 func (*PostDetailInfo) ProtoMessage() {}
 
 func (x *PostDetailInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[33]
+	mi := &file_authpost_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2579,7 +2443,7 @@ func (x *PostDetailInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PostDetailInfo.ProtoReflect.Descriptor instead.
 func (*PostDetailInfo) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{33}
+	return file_authpost_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *PostDetailInfo) GetPostId() int64 {
@@ -2650,7 +2514,7 @@ type Comment struct {
 
 func (x *Comment) Reset() {
 	*x = Comment{}
-	mi := &file_authpost_proto_msgTypes[34]
+	mi := &file_authpost_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2662,7 +2526,7 @@ func (x *Comment) String() string {
 func (*Comment) ProtoMessage() {}
 
 func (x *Comment) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[34]
+	mi := &file_authpost_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2675,7 +2539,7 @@ func (x *Comment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Comment.ProtoReflect.Descriptor instead.
 func (*Comment) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{34}
+	return file_authpost_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *Comment) GetCommentId() int64 {
@@ -2716,7 +2580,7 @@ type Like struct {
 
 func (x *Like) Reset() {
 	*x = Like{}
-	mi := &file_authpost_proto_msgTypes[35]
+	mi := &file_authpost_proto_msgTypes[33]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2728,7 +2592,7 @@ func (x *Like) String() string {
 func (*Like) ProtoMessage() {}
 
 func (x *Like) ProtoReflect() protoreflect.Message {
-	mi := &file_authpost_proto_msgTypes[35]
+	mi := &file_authpost_proto_msgTypes[33]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2741,7 +2605,7 @@ func (x *Like) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Like.ProtoReflect.Descriptor instead.
 func (*Like) Descriptor() ([]byte, []int) {
-	return file_authpost_proto_rawDescGZIP(), []int{35}
+	return file_authpost_proto_rawDescGZIP(), []int{33}
 }
 
 func (x *Like) GetPostId() int64 {
@@ -2822,23 +2686,18 @@ const file_authpost_proto_rawDesc = "" +
 	"\rdate_of_birth\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\vdateOfBirth\x12\x14\n" +
 	"\x05email\x18\x06 \x01(\tR\x05email\"1\n" +
 	"\x16GetUserFollowerRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xd1\x01\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xc3\x01\n" +
 	"\x17GetUserFollowerResponse\x12O\n" +
-	"\x06status\x18\x01 \x01(\x0e27.authpost.GetUserFollowerResponse.GetUserFollowerStatusR\x06status\x120\n" +
-	"\tfollowers\x18\x02 \x03(\v2\x12.authpost.UserInfoR\tfollowers\"3\n" +
+	"\x06status\x18\x01 \x01(\x0e27.authpost.GetUserFollowerResponse.GetUserFollowerStatusR\x06status\x12\"\n" +
+	"\ffollowersIds\x18\x02 \x03(\x03R\ffollowersIds\"3\n" +
 	"\x15GetUserFollowerStatus\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x12\n" +
-	"\x0eUSER_NOT_FOUND\x10\x01\"@\n" +
-	"\bUserInfo\x12\x1b\n" +
-	"\tuser_name\x18\x01 \x01(\tR\buserName\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\"2\n" +
+	"\x0eUSER_NOT_FOUND\x10\x01\"2\n" +
 	"\x17GetUserFollowingRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xd7\x01\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xc9\x01\n" +
 	"\x18GetUserFollowingResponse\x12Q\n" +
-	"\x06status\x18\x01 \x01(\x0e29.authpost.GetUserFollowingResponse.GetUserFollowingStatusR\x06status\x122\n" +
-	"\n" +
-	"followings\x18\x02 \x03(\v2\x12.authpost.UserInfoR\n" +
-	"followings\"4\n" +
+	"\x06status\x18\x01 \x01(\x0e29.authpost.GetUserFollowingResponse.GetUserFollowingStatusR\x06status\x12$\n" +
+	"\rfollowingsIds\x18\x02 \x03(\x03R\rfollowingsIds\"4\n" +
 	"\x16GetUserFollowingStatus\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x12\n" +
 	"\x0eUSER_NOT_FOUND\x10\x01\"O\n" +
@@ -2861,21 +2720,13 @@ const file_authpost_proto_rawDesc = "" +
 	"\x0eUSER_NOT_FOUND\x10\x01\x12\x10\n" +
 	"\fNOT_FOLLOWED\x10\x02\".\n" +
 	"\x13GetUserPostsRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xbd\x01\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xb0\x01\n" +
 	"\x14GetUserPostsResponse\x12I\n" +
-	"\x06status\x18\x01 \x01(\x0e21.authpost.GetUserPostsResponse.GetUserPostsStatusR\x06status\x12(\n" +
-	"\x05posts\x18\x02 \x03(\v2\x12.authpost.PostInfoR\x05posts\"0\n" +
+	"\x06status\x18\x01 \x01(\x0e21.authpost.GetUserPostsResponse.GetUserPostsStatusR\x06status\x12\x1b\n" +
+	"\tposts_ids\x18\x02 \x03(\x03R\bpostsIds\"0\n" +
 	"\x12GetUserPostsStatus\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x12\n" +
-	"\x0eUSER_NOT_FOUND\x10\x01\"\xe2\x01\n" +
-	"\bPostInfo\x12\x17\n" +
-	"\apost_id\x18\x01 \x01(\x03R\x06postId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12!\n" +
-	"\fcontent_text\x18\x03 \x01(\tR\vcontentText\x12,\n" +
-	"\x12content_image_path\x18\x04 \x03(\tR\x10contentImagePath\x12\x18\n" +
-	"\avisible\x18\x05 \x01(\bR\avisible\x129\n" +
-	"\n" +
-	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"\x97\x01\n" +
+	"\x0eUSER_NOT_FOUND\x10\x01\"\x97\x01\n" +
 	"\x11CreatePostRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12!\n" +
 	"\fcontent_text\x18\x02 \x01(\tR\vcontentText\x12,\n" +
@@ -2997,7 +2848,7 @@ func file_authpost_proto_rawDescGZIP() []byte {
 }
 
 var file_authpost_proto_enumTypes = make([]protoimpl.EnumInfo, 15)
-var file_authpost_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
+var file_authpost_proto_msgTypes = make([]protoimpl.MessageInfo, 34)
 var file_authpost_proto_goTypes = []any{
 	(CheckUserAuthenticationResponse_CheckUserAuthenticationStatus)(0), // 0: authpost.CheckUserAuthenticationResponse.CheckUserAuthenticationStatus
 	(CreateUserResponse_CreateUserStatus)(0),                           // 1: authpost.CreateUserResponse.CreateUserStatus
@@ -3025,96 +2876,90 @@ var file_authpost_proto_goTypes = []any{
 	(*UserDetailInfo)(nil),                                             // 23: authpost.UserDetailInfo
 	(*GetUserFollowerRequest)(nil),                                     // 24: authpost.GetUserFollowerRequest
 	(*GetUserFollowerResponse)(nil),                                    // 25: authpost.GetUserFollowerResponse
-	(*UserInfo)(nil),                                                   // 26: authpost.UserInfo
-	(*GetUserFollowingRequest)(nil),                                    // 27: authpost.GetUserFollowingRequest
-	(*GetUserFollowingResponse)(nil),                                   // 28: authpost.GetUserFollowingResponse
-	(*FollowUserRequest)(nil),                                          // 29: authpost.FollowUserRequest
-	(*FollowUserResponse)(nil),                                         // 30: authpost.FollowUserResponse
-	(*UnfollowUserRequest)(nil),                                        // 31: authpost.UnfollowUserRequest
-	(*UnfollowUserResponse)(nil),                                       // 32: authpost.UnfollowUserResponse
-	(*GetUserPostsRequest)(nil),                                        // 33: authpost.GetUserPostsRequest
-	(*GetUserPostsResponse)(nil),                                       // 34: authpost.GetUserPostsResponse
-	(*PostInfo)(nil),                                                   // 35: authpost.PostInfo
-	(*CreatePostRequest)(nil),                                          // 36: authpost.CreatePostRequest
-	(*CreatePostResponse)(nil),                                         // 37: authpost.CreatePostResponse
-	(*GetPostDetailInfoRequest)(nil),                                   // 38: authpost.GetPostDetailInfoRequest
-	(*GetPostDetailInfoResponse)(nil),                                  // 39: authpost.GetPostDetailInfoResponse
-	(*EditPostRequest)(nil),                                            // 40: authpost.EditPostRequest
-	(*EditPostResponse)(nil),                                           // 41: authpost.EditPostResponse
-	(*DeletePostRequest)(nil),                                          // 42: authpost.DeletePostRequest
-	(*DeletePostResponse)(nil),                                         // 43: authpost.DeletePostResponse
-	(*CommentPostRequest)(nil),                                         // 44: authpost.CommentPostRequest
-	(*CommentPostResponse)(nil),                                        // 45: authpost.CommentPostResponse
-	(*LikePostRequest)(nil),                                            // 46: authpost.LikePostRequest
-	(*LikePostResponse)(nil),                                           // 47: authpost.LikePostResponse
-	(*PostDetailInfo)(nil),                                             // 48: authpost.PostDetailInfo
-	(*Comment)(nil),                                                    // 49: authpost.Comment
-	(*Like)(nil),                                                       // 50: authpost.Like
-	(*timestamppb.Timestamp)(nil),                                      // 51: google.protobuf.Timestamp
+	(*GetUserFollowingRequest)(nil),                                    // 26: authpost.GetUserFollowingRequest
+	(*GetUserFollowingResponse)(nil),                                   // 27: authpost.GetUserFollowingResponse
+	(*FollowUserRequest)(nil),                                          // 28: authpost.FollowUserRequest
+	(*FollowUserResponse)(nil),                                         // 29: authpost.FollowUserResponse
+	(*UnfollowUserRequest)(nil),                                        // 30: authpost.UnfollowUserRequest
+	(*UnfollowUserResponse)(nil),                                       // 31: authpost.UnfollowUserResponse
+	(*GetUserPostsRequest)(nil),                                        // 32: authpost.GetUserPostsRequest
+	(*GetUserPostsResponse)(nil),                                       // 33: authpost.GetUserPostsResponse
+	(*CreatePostRequest)(nil),                                          // 34: authpost.CreatePostRequest
+	(*CreatePostResponse)(nil),                                         // 35: authpost.CreatePostResponse
+	(*GetPostDetailInfoRequest)(nil),                                   // 36: authpost.GetPostDetailInfoRequest
+	(*GetPostDetailInfoResponse)(nil),                                  // 37: authpost.GetPostDetailInfoResponse
+	(*EditPostRequest)(nil),                                            // 38: authpost.EditPostRequest
+	(*EditPostResponse)(nil),                                           // 39: authpost.EditPostResponse
+	(*DeletePostRequest)(nil),                                          // 40: authpost.DeletePostRequest
+	(*DeletePostResponse)(nil),                                         // 41: authpost.DeletePostResponse
+	(*CommentPostRequest)(nil),                                         // 42: authpost.CommentPostRequest
+	(*CommentPostResponse)(nil),                                        // 43: authpost.CommentPostResponse
+	(*LikePostRequest)(nil),                                            // 44: authpost.LikePostRequest
+	(*LikePostResponse)(nil),                                           // 45: authpost.LikePostResponse
+	(*PostDetailInfo)(nil),                                             // 46: authpost.PostDetailInfo
+	(*Comment)(nil),                                                    // 47: authpost.Comment
+	(*Like)(nil),                                                       // 48: authpost.Like
+	(*timestamppb.Timestamp)(nil),                                      // 49: google.protobuf.Timestamp
 }
 var file_authpost_proto_depIdxs = []int32{
 	0,  // 0: authpost.CheckUserAuthenticationResponse.status:type_name -> authpost.CheckUserAuthenticationResponse.CheckUserAuthenticationStatus
-	51, // 1: authpost.CreateUserRequest.date_of_birth:type_name -> google.protobuf.Timestamp
+	49, // 1: authpost.CreateUserRequest.date_of_birth:type_name -> google.protobuf.Timestamp
 	1,  // 2: authpost.CreateUserResponse.status:type_name -> authpost.CreateUserResponse.CreateUserStatus
-	51, // 3: authpost.EditUserRequest.date_of_birth:type_name -> google.protobuf.Timestamp
+	49, // 3: authpost.EditUserRequest.date_of_birth:type_name -> google.protobuf.Timestamp
 	2,  // 4: authpost.EditUserResponse.status:type_name -> authpost.EditUserResponse.EditUserStatus
 	3,  // 5: authpost.GetUserDetailInfoResponse.status:type_name -> authpost.GetUserDetailInfoResponse.GetUserDetailInfoStatus
 	23, // 6: authpost.GetUserDetailInfoResponse.user:type_name -> authpost.UserDetailInfo
-	51, // 7: authpost.UserDetailInfo.date_of_birth:type_name -> google.protobuf.Timestamp
+	49, // 7: authpost.UserDetailInfo.date_of_birth:type_name -> google.protobuf.Timestamp
 	4,  // 8: authpost.GetUserFollowerResponse.status:type_name -> authpost.GetUserFollowerResponse.GetUserFollowerStatus
-	26, // 9: authpost.GetUserFollowerResponse.followers:type_name -> authpost.UserInfo
-	5,  // 10: authpost.GetUserFollowingResponse.status:type_name -> authpost.GetUserFollowingResponse.GetUserFollowingStatus
-	26, // 11: authpost.GetUserFollowingResponse.followings:type_name -> authpost.UserInfo
-	6,  // 12: authpost.FollowUserResponse.status:type_name -> authpost.FollowUserResponse.FollowUserStatus
-	7,  // 13: authpost.UnfollowUserResponse.status:type_name -> authpost.UnfollowUserResponse.UnfollowUserStatus
-	8,  // 14: authpost.GetUserPostsResponse.status:type_name -> authpost.GetUserPostsResponse.GetUserPostsStatus
-	35, // 15: authpost.GetUserPostsResponse.posts:type_name -> authpost.PostInfo
-	51, // 16: authpost.PostInfo.created_at:type_name -> google.protobuf.Timestamp
-	9,  // 17: authpost.CreatePostResponse.status:type_name -> authpost.CreatePostResponse.CreatePostStatus
-	10, // 18: authpost.GetPostDetailInfoResponse.status:type_name -> authpost.GetPostDetailInfoResponse.GetPostDetailInfoStatus
-	48, // 19: authpost.GetPostDetailInfoResponse.post:type_name -> authpost.PostDetailInfo
-	11, // 20: authpost.EditPostResponse.status:type_name -> authpost.EditPostResponse.EditPostStatus
-	12, // 21: authpost.DeletePostResponse.status:type_name -> authpost.DeletePostResponse.DeletePostStatus
-	13, // 22: authpost.CommentPostResponse.status:type_name -> authpost.CommentPostResponse.CommentPostStatus
-	14, // 23: authpost.LikePostResponse.status:type_name -> authpost.LikePostResponse.LikePostStatus
-	51, // 24: authpost.PostDetailInfo.created_at:type_name -> google.protobuf.Timestamp
-	49, // 25: authpost.PostDetailInfo.comments:type_name -> authpost.Comment
-	50, // 26: authpost.PostDetailInfo.liked_users:type_name -> authpost.Like
-	15, // 27: authpost.AuthenticateAndPost.CheckUserAuthentication:input_type -> authpost.CheckUserAuthenticationRequest
-	17, // 28: authpost.AuthenticateAndPost.CreateUser:input_type -> authpost.CreateUserRequest
-	19, // 29: authpost.AuthenticateAndPost.EditUser:input_type -> authpost.EditUserRequest
-	21, // 30: authpost.AuthenticateAndPost.GetUserDetailInfo:input_type -> authpost.GetUserDetailInfoRequest
-	24, // 31: authpost.AuthenticateAndPost.GetUserFollower:input_type -> authpost.GetUserFollowerRequest
-	27, // 32: authpost.AuthenticateAndPost.GetUserFollowing:input_type -> authpost.GetUserFollowingRequest
-	29, // 33: authpost.AuthenticateAndPost.FollowUser:input_type -> authpost.FollowUserRequest
-	31, // 34: authpost.AuthenticateAndPost.UnfollowUser:input_type -> authpost.UnfollowUserRequest
-	33, // 35: authpost.AuthenticateAndPost.GetUserPosts:input_type -> authpost.GetUserPostsRequest
-	36, // 36: authpost.AuthenticateAndPost.CreatePost:input_type -> authpost.CreatePostRequest
-	38, // 37: authpost.AuthenticateAndPost.GetPostDetailInfo:input_type -> authpost.GetPostDetailInfoRequest
-	40, // 38: authpost.AuthenticateAndPost.EditPost:input_type -> authpost.EditPostRequest
-	42, // 39: authpost.AuthenticateAndPost.DeletePost:input_type -> authpost.DeletePostRequest
-	44, // 40: authpost.AuthenticateAndPost.CommentPost:input_type -> authpost.CommentPostRequest
-	46, // 41: authpost.AuthenticateAndPost.LikePost:input_type -> authpost.LikePostRequest
-	16, // 42: authpost.AuthenticateAndPost.CheckUserAuthentication:output_type -> authpost.CheckUserAuthenticationResponse
-	18, // 43: authpost.AuthenticateAndPost.CreateUser:output_type -> authpost.CreateUserResponse
-	20, // 44: authpost.AuthenticateAndPost.EditUser:output_type -> authpost.EditUserResponse
-	22, // 45: authpost.AuthenticateAndPost.GetUserDetailInfo:output_type -> authpost.GetUserDetailInfoResponse
-	25, // 46: authpost.AuthenticateAndPost.GetUserFollower:output_type -> authpost.GetUserFollowerResponse
-	28, // 47: authpost.AuthenticateAndPost.GetUserFollowing:output_type -> authpost.GetUserFollowingResponse
-	30, // 48: authpost.AuthenticateAndPost.FollowUser:output_type -> authpost.FollowUserResponse
-	32, // 49: authpost.AuthenticateAndPost.UnfollowUser:output_type -> authpost.UnfollowUserResponse
-	34, // 50: authpost.AuthenticateAndPost.GetUserPosts:output_type -> authpost.GetUserPostsResponse
-	37, // 51: authpost.AuthenticateAndPost.CreatePost:output_type -> authpost.CreatePostResponse
-	39, // 52: authpost.AuthenticateAndPost.GetPostDetailInfo:output_type -> authpost.GetPostDetailInfoResponse
-	41, // 53: authpost.AuthenticateAndPost.EditPost:output_type -> authpost.EditPostResponse
-	43, // 54: authpost.AuthenticateAndPost.DeletePost:output_type -> authpost.DeletePostResponse
-	45, // 55: authpost.AuthenticateAndPost.CommentPost:output_type -> authpost.CommentPostResponse
-	47, // 56: authpost.AuthenticateAndPost.LikePost:output_type -> authpost.LikePostResponse
-	42, // [42:57] is the sub-list for method output_type
-	27, // [27:42] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	5,  // 9: authpost.GetUserFollowingResponse.status:type_name -> authpost.GetUserFollowingResponse.GetUserFollowingStatus
+	6,  // 10: authpost.FollowUserResponse.status:type_name -> authpost.FollowUserResponse.FollowUserStatus
+	7,  // 11: authpost.UnfollowUserResponse.status:type_name -> authpost.UnfollowUserResponse.UnfollowUserStatus
+	8,  // 12: authpost.GetUserPostsResponse.status:type_name -> authpost.GetUserPostsResponse.GetUserPostsStatus
+	9,  // 13: authpost.CreatePostResponse.status:type_name -> authpost.CreatePostResponse.CreatePostStatus
+	10, // 14: authpost.GetPostDetailInfoResponse.status:type_name -> authpost.GetPostDetailInfoResponse.GetPostDetailInfoStatus
+	46, // 15: authpost.GetPostDetailInfoResponse.post:type_name -> authpost.PostDetailInfo
+	11, // 16: authpost.EditPostResponse.status:type_name -> authpost.EditPostResponse.EditPostStatus
+	12, // 17: authpost.DeletePostResponse.status:type_name -> authpost.DeletePostResponse.DeletePostStatus
+	13, // 18: authpost.CommentPostResponse.status:type_name -> authpost.CommentPostResponse.CommentPostStatus
+	14, // 19: authpost.LikePostResponse.status:type_name -> authpost.LikePostResponse.LikePostStatus
+	49, // 20: authpost.PostDetailInfo.created_at:type_name -> google.protobuf.Timestamp
+	47, // 21: authpost.PostDetailInfo.comments:type_name -> authpost.Comment
+	48, // 22: authpost.PostDetailInfo.liked_users:type_name -> authpost.Like
+	15, // 23: authpost.AuthenticateAndPost.CheckUserAuthentication:input_type -> authpost.CheckUserAuthenticationRequest
+	17, // 24: authpost.AuthenticateAndPost.CreateUser:input_type -> authpost.CreateUserRequest
+	19, // 25: authpost.AuthenticateAndPost.EditUser:input_type -> authpost.EditUserRequest
+	21, // 26: authpost.AuthenticateAndPost.GetUserDetailInfo:input_type -> authpost.GetUserDetailInfoRequest
+	24, // 27: authpost.AuthenticateAndPost.GetUserFollower:input_type -> authpost.GetUserFollowerRequest
+	26, // 28: authpost.AuthenticateAndPost.GetUserFollowing:input_type -> authpost.GetUserFollowingRequest
+	28, // 29: authpost.AuthenticateAndPost.FollowUser:input_type -> authpost.FollowUserRequest
+	30, // 30: authpost.AuthenticateAndPost.UnfollowUser:input_type -> authpost.UnfollowUserRequest
+	32, // 31: authpost.AuthenticateAndPost.GetUserPosts:input_type -> authpost.GetUserPostsRequest
+	34, // 32: authpost.AuthenticateAndPost.CreatePost:input_type -> authpost.CreatePostRequest
+	36, // 33: authpost.AuthenticateAndPost.GetPostDetailInfo:input_type -> authpost.GetPostDetailInfoRequest
+	38, // 34: authpost.AuthenticateAndPost.EditPost:input_type -> authpost.EditPostRequest
+	40, // 35: authpost.AuthenticateAndPost.DeletePost:input_type -> authpost.DeletePostRequest
+	42, // 36: authpost.AuthenticateAndPost.CommentPost:input_type -> authpost.CommentPostRequest
+	44, // 37: authpost.AuthenticateAndPost.LikePost:input_type -> authpost.LikePostRequest
+	16, // 38: authpost.AuthenticateAndPost.CheckUserAuthentication:output_type -> authpost.CheckUserAuthenticationResponse
+	18, // 39: authpost.AuthenticateAndPost.CreateUser:output_type -> authpost.CreateUserResponse
+	20, // 40: authpost.AuthenticateAndPost.EditUser:output_type -> authpost.EditUserResponse
+	22, // 41: authpost.AuthenticateAndPost.GetUserDetailInfo:output_type -> authpost.GetUserDetailInfoResponse
+	25, // 42: authpost.AuthenticateAndPost.GetUserFollower:output_type -> authpost.GetUserFollowerResponse
+	27, // 43: authpost.AuthenticateAndPost.GetUserFollowing:output_type -> authpost.GetUserFollowingResponse
+	29, // 44: authpost.AuthenticateAndPost.FollowUser:output_type -> authpost.FollowUserResponse
+	31, // 45: authpost.AuthenticateAndPost.UnfollowUser:output_type -> authpost.UnfollowUserResponse
+	33, // 46: authpost.AuthenticateAndPost.GetUserPosts:output_type -> authpost.GetUserPostsResponse
+	35, // 47: authpost.AuthenticateAndPost.CreatePost:output_type -> authpost.CreatePostResponse
+	37, // 48: authpost.AuthenticateAndPost.GetPostDetailInfo:output_type -> authpost.GetPostDetailInfoResponse
+	39, // 49: authpost.AuthenticateAndPost.EditPost:output_type -> authpost.EditPostResponse
+	41, // 50: authpost.AuthenticateAndPost.DeletePost:output_type -> authpost.DeletePostResponse
+	43, // 51: authpost.AuthenticateAndPost.CommentPost:output_type -> authpost.CommentPostResponse
+	45, // 52: authpost.AuthenticateAndPost.LikePost:output_type -> authpost.LikePostResponse
+	38, // [38:53] is the sub-list for method output_type
+	23, // [23:38] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_authpost_proto_init() }
@@ -3123,14 +2968,14 @@ func file_authpost_proto_init() {
 		return
 	}
 	file_authpost_proto_msgTypes[4].OneofWrappers = []any{}
-	file_authpost_proto_msgTypes[25].OneofWrappers = []any{}
+	file_authpost_proto_msgTypes[23].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_authpost_proto_rawDesc), len(file_authpost_proto_rawDesc)),
 			NumEnums:      15,
-			NumMessages:   36,
+			NumMessages:   34,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

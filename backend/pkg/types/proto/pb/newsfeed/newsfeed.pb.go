@@ -7,7 +7,6 @@
 package newsfeed
 
 import (
-	authpost "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -21,6 +20,52 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+type GetNewsfeedResponse_GetNewsfeedStatus int32
+
+const (
+	GetNewsfeedResponse_OK             GetNewsfeedResponse_GetNewsfeedStatus = 0
+	GetNewsfeedResponse_NEWSFEED_EMPTY GetNewsfeedResponse_GetNewsfeedStatus = 1
+)
+
+// Enum value maps for GetNewsfeedResponse_GetNewsfeedStatus.
+var (
+	GetNewsfeedResponse_GetNewsfeedStatus_name = map[int32]string{
+		0: "OK",
+		1: "NEWSFEED_EMPTY",
+	}
+	GetNewsfeedResponse_GetNewsfeedStatus_value = map[string]int32{
+		"OK":             0,
+		"NEWSFEED_EMPTY": 1,
+	}
+)
+
+func (x GetNewsfeedResponse_GetNewsfeedStatus) Enum() *GetNewsfeedResponse_GetNewsfeedStatus {
+	p := new(GetNewsfeedResponse_GetNewsfeedStatus)
+	*p = x
+	return p
+}
+
+func (x GetNewsfeedResponse_GetNewsfeedStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (GetNewsfeedResponse_GetNewsfeedStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_newsfeed_proto_enumTypes[0].Descriptor()
+}
+
+func (GetNewsfeedResponse_GetNewsfeedStatus) Type() protoreflect.EnumType {
+	return &file_newsfeed_proto_enumTypes[0]
+}
+
+func (x GetNewsfeedResponse_GetNewsfeedStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use GetNewsfeedResponse_GetNewsfeedStatus.Descriptor instead.
+func (GetNewsfeedResponse_GetNewsfeedStatus) EnumDescriptor() ([]byte, []int) {
+	return file_newsfeed_proto_rawDescGZIP(), []int{1, 0}
+}
 
 type GetNewsfeedRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -67,8 +112,9 @@ func (x *GetNewsfeedRequest) GetUserId() int64 {
 }
 
 type GetNewsfeedResponse struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Posts         []*authpost.PostDetailInfo `protobuf:"bytes,1,rep,name=posts,proto3" json:"posts,omitempty"`
+	state         protoimpl.MessageState                `protogen:"open.v1"`
+	Status        GetNewsfeedResponse_GetNewsfeedStatus `protobuf:"varint,1,opt,name=status,proto3,enum=newsfeed.GetNewsfeedResponse_GetNewsfeedStatus" json:"status,omitempty"`
+	PostsIds      []int64                               `protobuf:"varint,2,rep,packed,name=posts_ids,json=postsIds,proto3" json:"posts_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -103,9 +149,16 @@ func (*GetNewsfeedResponse) Descriptor() ([]byte, []int) {
 	return file_newsfeed_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *GetNewsfeedResponse) GetPosts() []*authpost.PostDetailInfo {
+func (x *GetNewsfeedResponse) GetStatus() GetNewsfeedResponse_GetNewsfeedStatus {
 	if x != nil {
-		return x.Posts
+		return x.Status
+	}
+	return GetNewsfeedResponse_OK
+}
+
+func (x *GetNewsfeedResponse) GetPostsIds() []int64 {
+	if x != nil {
+		return x.PostsIds
 	}
 	return nil
 }
@@ -114,11 +167,15 @@ var File_newsfeed_proto protoreflect.FileDescriptor
 
 const file_newsfeed_proto_rawDesc = "" +
 	"\n" +
-	"\x0enewsfeed.proto\x12\bnewsfeed\x1a\x0eauthpost.proto\"-\n" +
+	"\x0enewsfeed.proto\x12\bnewsfeed\"-\n" +
 	"\x12GetNewsfeedRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\x03R\x06userId\"E\n" +
-	"\x13GetNewsfeedResponse\x12.\n" +
-	"\x05posts\x18\x01 \x03(\v2\x18.authpost.PostDetailInfoR\x05posts2X\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\"\xac\x01\n" +
+	"\x13GetNewsfeedResponse\x12G\n" +
+	"\x06status\x18\x01 \x01(\x0e2/.newsfeed.GetNewsfeedResponse.GetNewsfeedStatusR\x06status\x12\x1b\n" +
+	"\tposts_ids\x18\x02 \x03(\x03R\bpostsIds\"/\n" +
+	"\x11GetNewsfeedStatus\x12\x06\n" +
+	"\x02OK\x10\x00\x12\x12\n" +
+	"\x0eNEWSFEED_EMPTY\x10\x012X\n" +
 	"\bNewsfeed\x12L\n" +
 	"\vGetNewsfeed\x12\x1c.newsfeed.GetNewsfeedRequest\x1a\x1d.newsfeed.GetNewsfeedResponse\"\x00BMZKgithub.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeedb\x06proto3"
 
@@ -134,16 +191,17 @@ func file_newsfeed_proto_rawDescGZIP() []byte {
 	return file_newsfeed_proto_rawDescData
 }
 
+var file_newsfeed_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_newsfeed_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_newsfeed_proto_goTypes = []any{
-	(*GetNewsfeedRequest)(nil),      // 0: newsfeed.GetNewsfeedRequest
-	(*GetNewsfeedResponse)(nil),     // 1: newsfeed.GetNewsfeedResponse
-	(*authpost.PostDetailInfo)(nil), // 2: authpost.PostDetailInfo
+	(GetNewsfeedResponse_GetNewsfeedStatus)(0), // 0: newsfeed.GetNewsfeedResponse.GetNewsfeedStatus
+	(*GetNewsfeedRequest)(nil),                 // 1: newsfeed.GetNewsfeedRequest
+	(*GetNewsfeedResponse)(nil),                // 2: newsfeed.GetNewsfeedResponse
 }
 var file_newsfeed_proto_depIdxs = []int32{
-	2, // 0: newsfeed.GetNewsfeedResponse.posts:type_name -> authpost.PostDetailInfo
-	0, // 1: newsfeed.Newsfeed.GetNewsfeed:input_type -> newsfeed.GetNewsfeedRequest
-	1, // 2: newsfeed.Newsfeed.GetNewsfeed:output_type -> newsfeed.GetNewsfeedResponse
+	0, // 0: newsfeed.GetNewsfeedResponse.status:type_name -> newsfeed.GetNewsfeedResponse.GetNewsfeedStatus
+	1, // 1: newsfeed.Newsfeed.GetNewsfeed:input_type -> newsfeed.GetNewsfeedRequest
+	2, // 2: newsfeed.Newsfeed.GetNewsfeed:output_type -> newsfeed.GetNewsfeedResponse
 	2, // [2:3] is the sub-list for method output_type
 	1, // [1:2] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
@@ -161,13 +219,14 @@ func file_newsfeed_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_newsfeed_proto_rawDesc), len(file_newsfeed_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_newsfeed_proto_goTypes,
 		DependencyIndexes: file_newsfeed_proto_depIdxs,
+		EnumInfos:         file_newsfeed_proto_enumTypes,
 		MessageInfos:      file_newsfeed_proto_msgTypes,
 	}.Build()
 	File_newsfeed_proto = out.File

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/auth"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/auth"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	"google.golang.org/protobuf/types/known/timestamppb"

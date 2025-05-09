@@ -9,6 +9,7 @@ import (
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
@@ -32,6 +33,12 @@ func (a *AuthenticateAndPostService) CreatePost(ctx context.Context, info *pb_aa
 	if result.Error != nil {
 		return nil, result.Error
 	}
+
+	// Send user_id and post_id to NewsfeedPublishingClient to announce to followers
+	a.nfPubClient.PublishPost(ctx, &pb_nfp.PublishPostRequest{
+		UserId: newPost.UserID,
+		PostId: int64(newPost.ID),
+	})
 
 	return &pb_aap.CreatePostResponse{
 		Status: pb_aap.CreatePostResponse_OK,
