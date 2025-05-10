@@ -81,7 +81,7 @@ func (svc *WebService) GetPostDetailInfo(ctx *gin.Context) {
 		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "post not found"})
 		return
 	} else if resp.GetStatus() == pb_aap.GetPostDetailInfoResponse_OK {
-		ctx.IndentedJSON(http.StatusAccepted, svc.newMapPost(resp.Post))
+		ctx.IndentedJSON(http.StatusAccepted, svc.newPostDetailInfoResponse(resp.Post))
 		return
 	} else {
 		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
@@ -302,32 +302,29 @@ func (svc *WebService) LikePost(ctx *gin.Context) {
 	}
 }
 
-func (svc *WebService) newMapPost(post *pb_aap.PostDetailInfo) gin.H {
-	var comments []map[string]interface{}
+func (svc *WebService) newPostDetailInfoResponse(post *pb_aap.PostDetailInfo) types.PostDetailInfoResponse {
+	var comments []types.CommentResponse
 	for _, comment := range post.GetComments() {
-		comments = append(comments, map[string]interface{}{
-			"comment_id":   comment.GetCommentId(),
-			"user_id":      comment.GetUserId(),
-			"post_id":      comment.GetPostId(),
-			"content_text": comment.GetContentText(),
+		comments = append(comments, types.CommentResponse{
+			CommentId:   comment.GetCommentId(),
+			UserId:      comment.GetUserId(),
+			PostId:      comment.GetPostId(),
+			ContentText: comment.GetContentText(),
 		})
 	}
 
-	var likes []map[string]interface{}
+	var users_liked []int64
 	for _, like := range post.GetLikedUsers() {
-		likes = append(likes, map[string]interface{}{
-			"user_id": like.GetUserId(),
-			"post_id": like.GetPostId(),
-		})
+		users_liked = append(users_liked, like.GetUserId())
 	}
 
-	return gin.H{
-		"post_id":            post.GetPostId(),
-		"created_at":         post.GetCreatedAt().AsTime().In(time.Local).Format(time.DateTime),
-		"user_id":            post.GetUserId(),
-		"content_text":       post.GetContentText(),
-		"content_image_path": post.GetContentImagePath(),
-		"comments":           comments,
-		"likes":              likes,
+	return types.PostDetailInfoResponse{
+		PostID:           post.GetPostId(),
+		UserID:           post.GetUserId(),
+		ContentText:      post.GetContentText(),
+		ContentImagePath: post.GetContentImagePath(),
+		CreatedAt:        post.GetCreatedAt().AsTime().In(time.Local).Format(time.DateTime),
+		Comments:         comments,
+		UsersLiked:       users_liked,
 	}
 }

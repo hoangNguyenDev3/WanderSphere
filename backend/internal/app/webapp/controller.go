@@ -2,12 +2,14 @@ package webapp
 
 import (
 	"fmt"
+
 	"net/http/pprof"
 
 	"github.com/gin-gonic/gin"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/service"
 	v1 "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/v1"
+	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
@@ -23,33 +25,30 @@ func (wc *WebController) Run() {
 
 // NewWebController creates new WebController
 func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
-	// Intialize webService
+	// Init web services
 	webService, err := service.NewWebService(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize router
+	// Init router
 	router := gin.Default()
 	for _, version := range cfg.APIVersions {
-		verXRouter := router.Group(version)
+		verXRouter := router.Group(fmt.Sprint("/api/" + version))
 		if version == "v1" { // TODO: Automate this when a new vision is added
 			v1.AddAllRouter(verXRouter, webService)
 		}
 	}
 
-	// Other supportive tools
+	// Init other support tools
 	initSwagger(router)
 	initPprof(router)
 
-	// Create webController
-	webController := WebController{
+	return &WebController{
 		webService: *webService,
 		router:     router,
 		port:       cfg.Port,
-	}
-
-	return &webController, nil
+	}, nil
 }
 
 func initSwagger(router *gin.Engine) {

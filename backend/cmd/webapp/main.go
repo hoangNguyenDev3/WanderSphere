@@ -10,9 +10,9 @@ import (
 
 func main() {
 	// Flags
-	cfgPath := flag.String("conf", "config.yml", "Path to config file for this service")
+	cfgPath := flag.String("cfg", "configs/config.yaml", "Path to config file for this service")
 
-	// Load configurations
+	// Load configs
 	cfg, err := configs.GetWebConfig(*cfgPath)
 	if err != nil {
 		log.Fatalf("failed to parse config: %v", err)

@@ -27,7 +27,7 @@ func (svc *WebService) GetNewsfeed(ctx *gin.Context) {
 		ctx.IndentedJSON(http.StatusOK, types.MessageResponse{Message: "newsfeed empty"})
 		return
 	} else if resp.GetStatus() == pb_nf.GetNewsfeedResponse_OK {
-		ctx.IndentedJSON(http.StatusOK, resp.GetPostsIds())
+		ctx.IndentedJSON(http.StatusOK, types.NewsfeedResponse{PostsIds: resp.GetPostsIds()})
 		return
 	} else {
 		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})

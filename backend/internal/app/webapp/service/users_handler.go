@@ -197,13 +197,13 @@ func (svc *WebService) GetUserDetailInfo(ctx *gin.Context) {
 		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
 		return
 	} else if resp.GetStatus() == pb_aap.GetUserDetailInfoResponse_OK {
-		ctx.IndentedJSON(http.StatusAccepted, gin.H{
-			"user_id":       resp.GetUser().GetUserId(),
-			"user_name":     resp.GetUser().GetUserName(),
-			"first_name":    resp.GetUser().GetFirstName(),
-			"last_name":     resp.GetUser().GetLastName(),
-			"date_of_birth": resp.GetUser().GetDateOfBirth().AsTime().Format(time.DateOnly),
-			"email":         resp.GetUser().GetEmail(),
+		ctx.IndentedJSON(http.StatusAccepted, types.UserDetailInfoResponse{
+			UserID:      resp.GetUser().GetUserId(),
+			UserName:    resp.GetUser().GetUserName(),
+			FirstName:   resp.GetUser().GetFirstName(),
+			LastName:    resp.GetUser().GetLastName(),
+			DateOfBirth: resp.GetUser().GetDateOfBirth().AsTime().Format(time.DateOnly),
+			Email:       resp.GetUser().GetEmail(),
 		})
 		return
 	} else {

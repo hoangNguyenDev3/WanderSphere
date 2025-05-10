@@ -25,8 +25,16 @@ func (svc *WebService) GetUserFollower(ctx *gin.Context) {
 		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
 		return
 	}
-
-	ctx.IndentedJSON(http.StatusAccepted, resp.GetFollowersIds())
+	if resp.GetStatus() == pb_aap.GetUserFollowerResponse_OK {
+		ctx.IndentedJSON(http.StatusOK, types.UserFollowerResponse{FollowersIds: resp.GetFollowersIds()})
+		return
+	} else if resp.GetStatus() == pb_aap.GetUserFollowerResponse_USER_NOT_FOUND {
+		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
+		return
+	} else {
+		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
+		return
+	}
 }
 
 func (svc *WebService) GetUserFollowing(ctx *gin.Context) {
@@ -45,8 +53,16 @@ func (svc *WebService) GetUserFollowing(ctx *gin.Context) {
 		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
 		return
 	}
-
-	ctx.IndentedJSON(http.StatusAccepted, resp.GetFollowingsIds())
+	if resp.GetStatus() == pb_aap.GetUserFollowingResponse_OK {
+		ctx.IndentedJSON(http.StatusOK, types.UserFollowingResponse{FollowingsIds: resp.GetFollowingsIds()})
+		return
+	} else if resp.GetStatus() == pb_aap.GetUserFollowingResponse_USER_NOT_FOUND {
+		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
+		return
+	} else {
+		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
+		return
+	}
 }
 
 func (svc *WebService) FollowUser(ctx *gin.Context) {
@@ -150,11 +166,10 @@ func (svc *WebService) GetUserPosts(ctx *gin.Context) {
 	if resp.GetStatus() == pb_aap.GetUserPostsResponse_USER_NOT_FOUND {
 		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
 	} else if resp.GetStatus() == pb_aap.GetUserPostsResponse_OK {
-		ctx.IndentedJSON(http.StatusOK, resp.GetPostsIds())
+		ctx.IndentedJSON(http.StatusOK, types.UserPostsResponse{PostsIds: resp.GetPostsIds()})
 		return
 	} else {
 		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
 		return
 	}
-
 }
