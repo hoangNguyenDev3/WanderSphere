@@ -11,9 +11,11 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	client_aap "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/authpost"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
 	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
 )
 
 type NewsfeedPublishingService struct {
@@ -22,6 +24,8 @@ type NewsfeedPublishingService struct {
 	kafkaReader               *kafka.Reader
 	redisClient               *redis.Client
 	authenticateAndPostClient pb_aap.AuthenticateAndPostClient
+
+	logger *zap.Logger
 }
 
 func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*NewsfeedPublishingService, error) {
@@ -59,12 +63,19 @@ func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*Newsf
 		return nil, err
 	}
 
+	// Establish logger
+	logger, err := utils.NewLogger(&cfg.Logger)
+	if err != nil {
+		return nil, err
+	}
+
 	// Return
 	return &NewsfeedPublishingService{
 		kafkaWriter:               kafkaWriter,
 		kafkaReader:               kafkaReader,
 		redisClient:               redisClient,
 		authenticateAndPostClient: aapClient,
+		logger:                    logger,
 	}, nil
 }
 

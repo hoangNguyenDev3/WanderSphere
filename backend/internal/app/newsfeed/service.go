@@ -8,12 +8,15 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	pb_nf "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed"
+	"go.uber.org/zap"
 )
 
 type NewsfeedService struct {
 	pb_nf.UnimplementedNewsfeedServer
 	redisClient *redis.Client
+	logger      *zap.Logger
 }
 
 func NewNewsfeedService(cfg *configs.NewsfeedConfig) (*NewsfeedService, error) {
@@ -23,8 +26,15 @@ func NewNewsfeedService(cfg *configs.NewsfeedConfig) (*NewsfeedService, error) {
 		return nil, errors.New("redis connection failed")
 	}
 
+	// Establish logger
+	logger, err := utils.NewLogger(&cfg.Logger)
+	if err != nil {
+		return nil, err
+	}
+
 	return &NewsfeedService{
 		redisClient: redisClient,
+		logger:      logger,
 	}, nil
 }
 
