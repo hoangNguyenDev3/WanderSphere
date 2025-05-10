@@ -16,6 +16,7 @@ services:
     hostname: web
     ports:
       - 19003:19003
+    profiles: [ "web", "all" ]
 
   aap:
     build:
@@ -33,6 +34,7 @@ services:
     hostname: aap
     ports:
       - 19001:19001
+    profiles: [ "aap", "all" ]
 
   newsfeed:
     build:
@@ -50,6 +52,7 @@ services:
     hostname: nf
     ports:
       - 19002:19002
+    profiles: [ "newsfeed", "all" ]
 
   nfp:
     build:
@@ -65,6 +68,7 @@ services:
     hostname: nfp
     ports:
       - 19004:19004
+    profiles: [ "nfp", "all" ]
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -80,6 +84,7 @@ services:
     hostname: kafka
     ports:
       - 9092:9092
+    profiles: [ "infra", "all" ]
 
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -91,6 +96,7 @@ services:
     hostname: zookeeper
     ports:
       - 2181:2181
+    profiles: [ "infra", "all" ]
 
   postgres:
     image: postgres
@@ -113,6 +119,7 @@ services:
       test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
+    profiles: [ "infra", "all" ]
 
   redis:
     image: redis:latest
@@ -123,6 +130,7 @@ services:
       - 6379:6379
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
+    profiles: [ "infra", "all" ]
 
 networks:
   intranet: {}
