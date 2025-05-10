@@ -4,15 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
-	client_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/authpost"
+	client_aap "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/authpost"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
 	"github.com/segmentio/kafka-go"
@@ -32,9 +30,10 @@ func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*Newsf
 		Brokers: cfg.Kafka.Brokers,
 		Topic:   cfg.Kafka.Topic,
 		Logger:  log.New(os.Stdout, "kafka writer: ", 0),
+		Async:   true,
 	})
 	if kafkaWriter == nil {
-		return nil, errors.New("failed connecting to kafka writer")
+		return nil, errors.New("failed creating kafka writer")
 	}
 
 	// Connect to kafka reader
@@ -42,9 +41,10 @@ func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*Newsf
 		Brokers: cfg.Kafka.Brokers,
 		Topic:   cfg.Kafka.Topic,
 		Logger:  log.New(os.Stdout, "kafka reader: ", 0),
+		GroupID: "0",
 	})
 	if kafkaReader == nil {
-		return nil, errors.New("kafka connection failed")
+		return nil, errors.New("failed creating kafka reader")
 	}
 
 	// Connect to redis
@@ -77,9 +77,6 @@ func (svc *NewsfeedPublishingService) PublishPost(ctx context.Context, info *pb_
 	err := svc.kafkaWriter.WriteMessages(ctx, kafka.Message{
 		Key:   []byte("post"),
 		Value: jsonValue,
-		Headers: []kafka.Header{
-			{Key: "Content-Type", Value: []byte("application/json")},
-		},
 	})
 	if err != nil {
 		return nil, err
@@ -94,10 +91,7 @@ func (svc *NewsfeedPublishingService) Run() {
 	for {
 		message, err := svc.kafkaReader.ReadMessage(context.Background())
 		if err != nil {
-			fmt.Println(err.Error())
-			fmt.Println("worker will sleep 0.1s then try again")
-			time.Sleep(100 * time.Millisecond)
-			continue
+			panic(err)
 		}
 		svc.processMessage(message)
 	}
@@ -132,21 +126,21 @@ func (svc *NewsfeedPublishingService) processPost(value []byte) {
 			panic(err)
 		}
 
-		followersIDs := resp.GetFollowersIds()
-		if len(followersIDs) > 0 {
-			_, err = svc.redisClient.RPush(context.Background(), followersKey, followersIDs).Result()
+		followersIds := resp.GetFollowersIds()
+		for _, id := range followersIds {
+			_, err = svc.redisClient.RPush(context.Background(), followersKey, id).Result()
 			if err != nil {
 				panic(err)
 			}
 		}
 	}
-	followersIDs, err := svc.redisClient.LRange(context.Background(), followersKey, 0, -1).Result()
+	followersIds, err := svc.redisClient.LRange(context.Background(), followersKey, 0, -1).Result()
 	if err != nil {
-		panic("err")
+		panic(err)
 	}
 
 	// 3. Add this post_id into followers' newsfeed
-	for _, id := range followersIDs {
+	for _, id := range followersIds {
 		newsfeedKey := "newsfeed:" + id
 		_, err := svc.redisClient.RPush(context.Background(), newsfeedKey, message["post_id"]).Result()
 		if err != nil {

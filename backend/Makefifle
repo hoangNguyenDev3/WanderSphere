@@ -28,8 +28,8 @@ vendor:
 docker_clear:
 	docker volume rm $(docker volume ls -qf dangling=true) & docker rmi $(docker images -qf "dangling=true")
 compose_up_rebuild:
-	docker compose up --build --force-recreate
+	docker-compose up --build --force-recreate
 compose_up:
-	docker compose up
+	docker-compose up
 gen_swagger:
 	swag init -g cmd/webapp/main.go

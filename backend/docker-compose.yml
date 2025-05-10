@@ -8,6 +8,7 @@ services:
       target: test_env
     image: webapp
     depends_on:
+      - newsfeed
       - aap
     networks:
       - intranet
@@ -21,9 +22,9 @@ services:
       context: .
       dockerfile: cmd/authpost/Dockerfile
       target: test_env
-    image: authpost
+    image: aapsvc
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -33,10 +34,68 @@ services:
     ports:
       - 19001:19001
 
+  newsfeed:
+    build:
+      context: .
+      dockerfile: cmd/newsfeed/Dockerfile
+      target: test_env
+    image: nfsvc
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - intranet
+    hostname: nf
+    ports:
+      - 19002:19002
+
+  nfp:
+    build:
+      context: .
+      dockerfile: cmd/newsfeed_publishing/Dockerfile
+      target: test_env
+    image: nfpsvc
+    depends_on:
+      - aap
+      - kafka
+    networks:
+      - intranet
+    hostname: nfp
+    ports:
+      - 19004:19004
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - intranet
+    hostname: kafka
+    ports:
+      - 9092:9092
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - intranet
+    hostname: zookeeper
+    ports:
+      - 2181:2181
+
   postgres:
     image: postgres
     volumes:
-      - ./postgresql/postgresql.conf:/etc/postgresql/postgresql.conf # Global default settings
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf # Global default settings
       - ./data/postgres:/var/lib/postgresql/data # Data of databases
     environment:
       POSTGRES_PASSWORD: 123456
@@ -51,7 +110,7 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres", "-d", "wander_sphere" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
 

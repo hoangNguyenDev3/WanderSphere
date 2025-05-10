@@ -44,4 +44,6 @@ web_config:
   api_version: ["v1"]
   authenticate_and_post:
     hosts: ["aap:19001"]
+  newsfeed:
+    hosts: ["nf:19002"]
   redis: *REDIS
