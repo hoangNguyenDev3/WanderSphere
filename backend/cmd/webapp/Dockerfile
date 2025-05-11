@@ -3,17 +3,20 @@ FROM golang:1.20.5 AS builder
 ENV GO111MODULE=on
 WORKDIR /app
 
-RUN mkdir /var/log/entry/
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o webapp.linux -mod=mod cmd/webapp/main.go
 
-RUN --mount=type=cache,target=/go/pkg/mod/cache go mod download
-RUN --mount=type=cache,target=/go/pkg/mod/cache CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o webapp.linux -mod=mod cmd/webapp/main.go
-CMD ["/app/webapp.linux"]
+FROM alpine:latest AS test_env
+WORKDIR /app
+COPY --from=builder /app/webapp.linux .
+COPY --from=builder /app/configs /app/configs
+CMD ["/app/webapp.linux", "-conf", "configs/files/test.yml"]
 
-FROM builder AS test_env
-RUN cp /app/configs/config.yaml /app/config.yml
-CMD ["/app/webapp.linux"]
-
-FROM builder AS live_env
-RUN cp /app/configs/live.yaml /app/config.yml
-CMD ["/app/webapp.linux"]
+FROM alpine:latest AS live_env
+WORKDIR /app
+COPY --from=builder /app/webapp.linux .
+COPY --from=builder /app/configs /app/configs
+CMD ["/app/webapp.linux", "-conf", "configs/files/live.yml"]

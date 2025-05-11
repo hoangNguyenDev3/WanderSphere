@@ -1,0 +1,65 @@
+# Configuration for services in test environment
+# This is a shared config file used by multiple services in Docker environment
+# Each service will only use the sections relevant to it
+
+# AuthPost Service Configuration
+authpost:
+  port: 19001
+  postgres:
+    dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere sslmode=disable"
+    defaultStringSize: 256
+    disableDatetimePrecision: true
+    dontSupportRenameIndex: true
+    skipInitializeWithVersion: false
+  redis:
+    addr: "redis:6379"
+    password: ""
+  logger:
+    level: "debug"
+    path: "logs/authpost.log" 
+  auth:
+    session:
+      cookie_name: "wandersphere_session"
+      expiration_minutes: 1440  # 24 hours
+      secure: true
+      http_only: true
+      same_site: "strict"
+
+# Newsfeed Service Configuration 
+newsfeed:
+  port: 19002
+  postgres:
+    dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere sslmode=disable"
+  redis:
+    addr: "redis:6379"
+    password: ""
+  logger:
+    level: "debug"
+    path: "logs/newsfeed.log"
+
+# Newsfeed Publishing Service Configuration
+newsfeed_publishing:
+  port: 19004
+  redis:
+    addr: "redis:6379"
+    password: ""
+    db: 0
+  kafka:
+    topic: "wander_sphere"
+    brokers: ["kafka:9092"]
+  authenticate_and_post:
+    hosts: ["aap:19001"]
+  logger:
+    level: "debug"
+    path: "logs/newsfeed_publishing.log"
+
+# WebApp Service Configuration
+webapp:
+  port: 19003
+  newsfeed:
+    hosts: ["nf:19002"]
+  authpost:
+    hosts: ["aap:19001"]
+  logger:
+    level: "debug"
+    path: "logs/webapp.log" 

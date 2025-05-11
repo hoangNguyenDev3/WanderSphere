@@ -1,13 +1,16 @@
 syntax = "proto3";
-option go_package = "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed";
+option go_package = "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed;newsfeed";
 package newsfeed;
 
 service Newsfeed {
     rpc GetNewsfeed(GetNewsfeedRequest) returns (GetNewsfeedResponse) {}
+    rpc InvalidateCache(InvalidateCacheRequest) returns (InvalidateCacheResponse) {}
 }
 
 message GetNewsfeedRequest {
     int64 user_id = 1;
+    int32 page = 2;
+    int32 page_size = 3;
 }
 
 message GetNewsfeedResponse {
@@ -17,4 +20,20 @@ message GetNewsfeedResponse {
     }
     GetNewsfeedStatus status = 1;
     repeated int64 posts_ids = 2;
+    int32 total_pages = 3;
+    int32 current_page = 4;
+    int32 total_items = 5;
+}
+
+message InvalidateCacheRequest {
+    int64 post_id = 1;
+    bool is_deleted = 2;
+}
+
+message InvalidateCacheResponse {
+    enum InvalidateCacheStatus {
+        OK = 0;
+        ERROR = 1;
+    }
+    InvalidateCacheStatus status = 1;
 }

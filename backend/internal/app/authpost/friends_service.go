@@ -69,7 +69,7 @@ func (a *AuthenticateAndPostService) FollowUser(ctx context.Context, info *pb_aa
 	var user types.User
 	a.db.Preload("Followings").First(&user, info.GetUserId())
 	for _, following := range user.Followings {
-		if following.ID == uint(info.GetFollowingId()) {
+		if int64(following.ID) == info.GetFollowingId() {
 			return &pb_aap.FollowUserResponse{Status: pb_aap.FollowUserResponse_ALREADY_FOLLOWED}, nil
 		}
 	}
@@ -97,7 +97,7 @@ func (a *AuthenticateAndPostService) UnfollowUser(ctx context.Context, info *pb_
 	a.db.Preload("Followings").First(&user, info.GetUserId())
 	currentlyFollowing := false
 	for _, following := range user.Followings {
-		if following.ID == uint(info.GetFollowingId()) {
+		if int64(following.ID) == info.GetFollowingId() {
 			currentlyFollowing = true
 			break
 		}

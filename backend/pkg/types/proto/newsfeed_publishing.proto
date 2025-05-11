@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing";
+option go_package = "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing;newsfeed_publishing";
 package newsfeed_publishing;
 
 service NewsfeedPublishing {

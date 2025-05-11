@@ -34,3 +34,7 @@ type randomClient struct {
 func (a *randomClient) GetNewsfeed(ctx context.Context, in *pb_nf.GetNewsfeedRequest, opts ...grpc.CallOption) (*pb_nf.GetNewsfeedResponse, error) {
 	return a.clients[rand.Intn(len(a.clients))].GetNewsfeed(ctx, in, opts...)
 }
+
+func (a *randomClient) InvalidateCache(ctx context.Context, in *pb_nf.InvalidateCacheRequest, opts ...grpc.CallOption) (*pb_nf.InvalidateCacheResponse, error) {
+	return a.clients[rand.Intn(len(a.clients))].InvalidateCache(ctx, in, opts...)
+}

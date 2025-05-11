@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -11,30 +10,49 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-func GenerateToken(user_id uint) (string, error) {
+const (
+	DefaultTokenLifespanHours = 24                        // Default token lifespan is 24 hours
+	DefaultAPISecret          = "wandersphere_secret_key" // Default API secret
+)
 
-	token_lifespan, err := strconv.Atoi(os.Getenv("TOKEN_HOUR_LIFESPAN"))
+// NOTE: The JWT implementation is kept for backward compatibility.
+// The preferred authentication approach is session-based authentication using Redis.
+// New code should use the session-based authentication mechanism.
 
-	if err != nil {
-		return "", err
+// GenerateToken creates a new JWT token for the given user ID
+// Deprecated: Use session-based authentication with Redis instead.
+func GenerateToken(user_id uint, secretKey string, tokenLifespanHours int) (string, error) {
+	// Use provided values or defaults
+	if secretKey == "" {
+		secretKey = DefaultAPISecret
+	}
+
+	if tokenLifespanHours <= 0 {
+		tokenLifespanHours = DefaultTokenLifespanHours
 	}
 
 	claims := jwt.MapClaims{}
 	claims["authorized"] = true
 	claims["user_id"] = user_id
-	claims["exp"] = time.Now().Add(time.Hour * time.Duration(token_lifespan)).Unix()
+	claims["exp"] = time.Now().Add(time.Hour * time.Duration(tokenLifespanHours)).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	return token.SignedString([]byte(os.Getenv("API_SECRET")))
+	return token.SignedString([]byte(secretKey))
 }
 
-func TokenValid(c *gin.Context) error {
+// TokenValid validates the JWT token from the request
+// Deprecated: Use session-based authentication with Redis instead.
+func TokenValid(c *gin.Context, secretKey string) error {
+	if secretKey == "" {
+		secretKey = DefaultAPISecret
+	}
+
 	tokenString := ExtractToken(c)
 	_, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(os.Getenv("API_SECRET")), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return err
@@ -42,6 +60,8 @@ func TokenValid(c *gin.Context) error {
 	return nil
 }
 
+// ExtractToken extracts the JWT token from the request
+// Deprecated: Use session-based authentication with Redis instead.
 func ExtractToken(c *gin.Context) string {
 	token := c.Query("token")
 	if token != "" {
@@ -54,14 +74,19 @@ func ExtractToken(c *gin.Context) string {
 	return ""
 }
 
-func ExtractTokenID(c *gin.Context) (uint, error) {
+// ExtractTokenID extracts the user ID from the JWT token
+// Deprecated: Use session-based authentication with Redis instead.
+func ExtractTokenID(c *gin.Context, secretKey string) (uint, error) {
+	if secretKey == "" {
+		secretKey = DefaultAPISecret
+	}
 
 	tokenString := ExtractToken(c)
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(os.Getenv("API_SECRET")), nil
+		return []byte(secretKey), nil
 	})
 	if err != nil {
 		return 0, err

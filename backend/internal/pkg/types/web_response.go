@@ -3,6 +3,14 @@ package types
 // MessageResponse return message in response.
 type MessageResponse struct {
 	Message string `json:"message"`
+	Status  string `json:"status,omitempty"`
+}
+
+// ErrorResponse provides a standardized error response format
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message,omitempty"`
+	Code    int    `json:"code,omitempty"`
 }
 
 // PostDetailInfoResponse return post detail in response.

@@ -4,27 +4,29 @@ DB_HOST = "localhost"
 DB_PORT = "5432"
 DB_NAME = "wander_sphere"
 
+# Database management
+create_db:
+	PGPASSWORD=$(PASSWORD) createdb -h $(DB_HOST) -p $(DB_PORT) -U $(USERNAME) $(DB_NAME) || true
+
 # Database migrations
 new_migration:
-	migrate create -ext sql -dir scripts/migration/ -seq $(MESSAGE_NAME)
-up_migration:
-	migrate -path scripts/migration/ -database "postgres://$(USERNAME):$(PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose up
+	migrate create -ext sql -dir migrations/ -seq $(MESSAGE_NAME)
+up_migration: create_db
+	migrate -path migrations/ -database "postgresql://$(USERNAME):$(PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose up
 down_migration:
-	migrate -path scripts/migration/ -database "postgres://$(USERNAME):$(PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose down
+	migrate -path migrations/ -database "postgresql://$(USERNAME):$(PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose down
 
 # Protobuf generation
+proto: 
+	chmod +x scripts/regenerate_protos.sh
+	./scripts/regenerate_protos.sh
+
 proto_aap:
-	protoc --proto_path=pkg/types/proto/ --go_out=pkg/types/proto/pb/authen_and_post --go_opt=paths=source_relative \
-	--go-grpc_out=pkg/types/proto/pb/authen_and_post --go-grpc_opt=paths=source_relative --experimental_allow_proto3_optional  \
-	authen_and_post.proto
+	protoc --go_out=./pkg/types/proto/pb/authpost/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/authpost/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/authpost.proto 
 proto_newsfeed:
-	protoc --proto_path=pkg/types/proto/ --go_out=pkg/types/proto/pb/newsfeed --go_opt=paths=source_relative \
-	--go-grpc_out=pkg/types/proto/pb/newsfeed --go-grpc_opt=paths=source_relative --experimental_allow_proto3_optional \
-	newsfeed.proto
+	protoc --go_out=./pkg/types/proto/pb/newsfeed/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/newsfeed/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/newsfeed.proto 
 proto_newsfeed_publishing:
-	protoc --proto_path=pkg/types/proto/ --go_out=pkg/types/proto/pb/newsfeed_publishing --go_opt=paths=source_relative \
-	--go-grpc_out=pkg/types/proto/pb/newsfeed_publishing --go-grpc_opt=paths=source_relative --experimental_allow_proto3_optional \
-	newsfeed_publishing.proto
+	protoc --go_out=./pkg/types/proto/pb/newsfeed_publishing/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/newsfeed_publishing/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/newsfeed_publishing.proto 
 
 # Dependencies
 .PHONY: vendor

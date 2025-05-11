@@ -1,6 +1,6 @@
 syntax = "proto3";
 import "google/protobuf/timestamp.proto";
-option go_package = "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost";
+option go_package = "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost;authpost";
 package authpost;
 
 service AuthenticateAndPost {

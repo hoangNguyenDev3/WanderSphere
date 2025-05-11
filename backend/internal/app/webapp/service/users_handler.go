@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
@@ -18,12 +19,20 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 	var jsonRequest types.LoginRequest
 	err := ctx.ShouldBindJSON(&jsonRequest)
 	if err != nil {
-		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: err.Error()})
+		ctx.JSON(http.StatusBadRequest, types.ErrorResponse{
+			Error:   "validation_error",
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		})
 		return
 	}
 	err = validate.Struct(jsonRequest)
 	if err != nil {
-		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: err.Error()})
+		ctx.JSON(http.StatusBadRequest, types.ErrorResponse{
+			Error:   "validation_error",
+			Message: err.Error(),
+			Code:    http.StatusBadRequest,
+		})
 		return
 	}
 
@@ -33,33 +42,95 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 		UserPassword: jsonRequest.Password,
 	})
 	if err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
+		ctx.JSON(http.StatusInternalServerError, types.ErrorResponse{
+			Error:   "internal_error",
+			Message: err.Error(),
+			Code:    http.StatusInternalServerError,
+		})
 		return
 	}
 	if authentication.GetStatus() == pb_aap.CheckUserAuthenticationResponse_USER_NOT_FOUND {
-		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "wrong username or password"})
+		ctx.JSON(http.StatusBadRequest, types.ErrorResponse{
+			Error:   "auth_error",
+			Message: "wrong username or password",
+			Code:    http.StatusBadRequest,
+		})
 		return
 	} else if authentication.GetStatus() == pb_aap.CheckUserAuthenticationResponse_WRONG_PASSWORD {
-		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "wrong username or password"})
+		ctx.JSON(http.StatusBadRequest, types.ErrorResponse{
+			Error:   "auth_error",
+			Message: "wrong username or password",
+			Code:    http.StatusBadRequest,
+		})
 		return
 	} else if authentication.GetStatus() == pb_aap.CheckUserAuthenticationResponse_OK {
 		// Set a sessionId for this session
 		sessionId := uuid.New().String()
 
+		// Get session configuration from config
+		var expirationTime time.Duration
+
+		// Use config value if available, otherwise use a reasonable default (24 hours)
+		if svc.Config != nil && svc.Config.Auth.Session.ExpirationMinutes > 0 {
+			expirationTime = time.Minute * time.Duration(svc.Config.Auth.Session.ExpirationMinutes)
+		} else {
+			expirationTime = time.Hour * 24 // Default to 24 hours
+		}
+
 		// Save current sessionID and expiration time in Redis
-		err = svc.RedisClient.Set(svc.RedisClient.Context(), sessionId, authentication.GetUserId(), time.Minute*15).Err()
+		err = svc.RedisClient.Set(svc.RedisClient.Context(), sessionId, authentication.GetUserId(), expirationTime).Err()
 		if err != nil {
-			ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
+			ctx.JSON(http.StatusInternalServerError, types.ErrorResponse{
+				Error:   "session_error",
+				Message: "Failed to create session: " + err.Error(),
+				Code:    http.StatusInternalServerError,
+			})
 			return
 		}
 
-		// Set sessionID cookie
-		ctx.SetCookie("session_id", sessionId, 900, "", "", false, false)
+		// Set cookie configuration
+		cookieName := "session_id" // Default
+		if svc.Config != nil && svc.Config.Auth.Session.CookieName != "" {
+			cookieName = svc.Config.Auth.Session.CookieName
+		}
 
-		ctx.IndentedJSON(http.StatusOK, types.MessageResponse{Message: "OK"})
+		// Default to secure settings unless explicitly configured otherwise
+		secure := true
+		httpOnly := true
+		sameSite := http.SameSiteStrictMode
+
+		if svc.Config != nil {
+			// Only override defaults if explicitly set in config
+			if svc.Config.Auth.Session.Secure == false {
+				secure = false
+			}
+			if svc.Config.Auth.Session.HTTPOnly == false {
+				httpOnly = false
+			}
+
+			if svc.Config.Auth.Session.SameSite == "lax" {
+				sameSite = http.SameSiteLaxMode
+			} else if svc.Config.Auth.Session.SameSite == "none" {
+				sameSite = http.SameSiteNoneMode
+			}
+		}
+
+		// Set sessionID cookie with secure settings
+		maxAge := int(expirationTime.Seconds())
+		ctx.SetSameSite(sameSite)
+		ctx.SetCookie(cookieName, sessionId, maxAge, "/", "", secure, httpOnly)
+
+		ctx.JSON(http.StatusOK, types.MessageResponse{
+			Message: "Login successful",
+			Status:  "success",
+		})
 		return
 	} else {
-		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
+		ctx.JSON(http.StatusInternalServerError, types.ErrorResponse{
+			Error:   "unknown_error",
+			Message: "An unexpected error occurred",
+			Code:    http.StatusInternalServerError,
+		})
 		return
 	}
 }
@@ -213,13 +284,37 @@ func (svc *WebService) GetUserDetailInfo(ctx *gin.Context) {
 }
 
 func (svc *WebService) checkSessionAuthentication(ctx *gin.Context) (sessionId string, userId int, err error) {
-	sessionId, err = ctx.Cookie("session_id")
+	// Get cookie name from config
+	cookieName := "session_id" // Default
+	if svc.Config != nil && svc.Config.Auth.Session.CookieName != "" {
+		cookieName = svc.Config.Auth.Session.CookieName
+	}
+
+	// Try to get session cookie
+	sessionId, err = ctx.Cookie(cookieName)
 	if err != nil {
+		svc.Logger.Debug("Session cookie not found",
+			zap.String("cookie_name", cookieName),
+			zap.Error(err))
 		return "", 0, err
 	}
 
-	userId, err = svc.RedisClient.Get(svc.RedisClient.Context(), sessionId).Int()
+	// Validate session in Redis
+	val, err := svc.RedisClient.Get(svc.RedisClient.Context(), sessionId).Result()
 	if err != nil {
+		svc.Logger.Debug("Session not found in Redis or expired",
+			zap.String("session_id", sessionId),
+			zap.Error(err))
+		return "", 0, err
+	}
+
+	// Parse user ID from session
+	userId, err = strconv.Atoi(val)
+	if err != nil {
+		svc.Logger.Warn("Invalid user ID in session",
+			zap.String("session_id", sessionId),
+			zap.String("value", val),
+			zap.Error(err))
 		return "", 0, err
 	}
 

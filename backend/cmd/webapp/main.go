@@ -10,10 +10,11 @@ import (
 
 func main() {
 	// Flags
-	cfgPath := flag.String("cfg", "configs/config.yaml", "Path to config file for this service")
+	cfgPath := flag.String("conf", "configs/files/local_webapp.yml", "Path to config file for this service")
+	flag.Parse()
 
 	// Load configs
-	cfg, err := configs.GetWebConfig(*cfgPath)
+	cfg, err := configs.GetWebConfigDirect(*cfgPath)
 	if err != nil {
 		log.Fatalf("failed to parse config: %v", err)
 		return
@@ -26,6 +27,7 @@ func main() {
 		return
 	}
 
+	log.Printf("Starting Web service on port %d", cfg.Port)
 	// Serve
 	web_controller.Run()
 }

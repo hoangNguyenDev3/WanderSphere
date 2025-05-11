@@ -9,11 +9,15 @@ import (
 func AddPostRouter(r *gin.RouterGroup, svc *service.WebService) {
 	postRouter := r.Group("posts")
 
-	postRouter.POST("", svc.CreatePost)
+	// Public routes
 	postRouter.GET(":post_id", svc.GetPostDetailInfo)
-	postRouter.PUT(":post_id", svc.EditPost)
-	postRouter.DELETE(":post_id", svc.DeletePost)
 
-	postRouter.POST(":post_id/comments", svc.CommentPost)
-	postRouter.POST(":post_id/likes", svc.LikePost)
+	// Protected routes that require authentication
+	authRouter := postRouter.Group("")
+	authRouter.Use(svc.AuthRequired())
+	authRouter.POST("", svc.CreatePost)
+	authRouter.PUT(":post_id", svc.EditPost)
+	authRouter.DELETE(":post_id", svc.DeletePost)
+	authRouter.POST(":post_id/comments", svc.CommentPost)
+	authRouter.POST(":post_id/likes", svc.LikePost)
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -14,13 +15,18 @@ import (
 
 func main() {
 	// Flags
-	cfgPath := flag.String("conf", "config.yml", "Path to config file for this service")
+	cfgPath := flag.String("conf", "configs/files/local_newsfeed_publishing.yml", "Path to config file for this service")
+	flag.Parse()
 
 	// Load configurations
-	cfg, err := configs.GetNewsfeedPublishingConfig(*cfgPath)
+	cfg, err := configs.GetNewsfeedPublishingConfigDirect(*cfgPath)
 	if err != nil {
 		log.Fatalf("failed to parse config: %v", err)
 	}
+
+	// Debug: print config
+	cfgJSON, _ := json.MarshalIndent(cfg, "", "  ")
+	log.Printf("Loaded config from %s: %s", *cfgPath, string(cfgJSON))
 
 	// Start new newsfeed publishing service
 	service, err := newsfeed_publishing_svc.NewNewsfeedPublishingService(cfg)
@@ -32,13 +38,16 @@ func main() {
 	go service.Run()
 
 	// Start grpc server
-	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.Port))
+	addr := fmt.Sprintf("0.0.0.0:%d", cfg.Port)
+	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.Fatalf("can not listen: %v", err)
+		log.Fatalf("can not listen on %s: %v", addr, err)
 	}
 
 	grpcServer := grpc.NewServer()
 	pb_nfp.RegisterNewsfeedPublishingServer(grpcServer, service)
+
+	log.Printf("Starting Newsfeed Publishing service on port %d", cfg.Port)
 	err = grpcServer.Serve(lis)
 	if err != nil {
 		log.Fatalf("server stopped: %v", err)

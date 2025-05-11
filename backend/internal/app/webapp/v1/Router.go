@@ -6,6 +6,10 @@ import (
 )
 
 func AddAllRouter(r *gin.RouterGroup, webService *service.WebService) {
+	// Apply RefreshSession middleware to all routes to handle session extension
+	r.Use(webService.RefreshSession())
+
+	// Add all the routers
 	AddUserRouter(r, webService)
 	AddFriendRouter(r, webService)
 	AddPostRouter(r, webService)

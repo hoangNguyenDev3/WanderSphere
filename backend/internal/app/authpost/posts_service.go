@@ -10,6 +10,7 @@ import (
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
 )
@@ -23,25 +24,44 @@ func (a *AuthenticateAndPostService) CreatePost(ctx context.Context, info *pb_aa
 		return &pb_aap.CreatePostResponse{Status: pb_aap.CreatePostResponse_USER_NOT_FOUND}, nil
 	}
 
+	// Process image paths
+	var contentImagePath string
+	if len(info.GetContentImagePath()) > 0 {
+		// For consistency with the database schema, we're joining multiple paths
+		// with a space separator. When retrieving, we'll split this string back to a slice.
+		contentImagePath = strings.Join(info.GetContentImagePath(), " ")
+		a.logger.Debug("Using image paths", zap.String("paths", contentImagePath))
+	}
+
 	newPost := types.Post{
 		UserID:           info.GetUserId(),
 		ContentText:      info.GetContentText(),
-		ContentImagePath: strings.Join(info.GetContentImagePath(), " "),
+		ContentImagePath: contentImagePath,
 	}
+
+	// Handle visibility - if not visible, set DeletedAt to current time
 	if !info.GetVisible() {
-		newPost.DeletedAt.Valid = true
-		newPost.DeletedAt.Time = time.Now()
+		now := time.Now()
+		newPost.DeletedAt = &now
 	}
+
 	result := a.db.Create(&newPost)
 	if result.Error != nil {
+		a.logger.Error("Error creating post", zap.Error(result.Error))
 		return nil, result.Error
 	}
 
 	// Send user_id and post_id to NewsfeedPublishingClient to announce to followers
-	a.nfPubClient.PublishPost(ctx, &pb_nfp.PublishPostRequest{
-		UserId: newPost.UserID,
-		PostId: int64(newPost.ID),
-	})
+	if a.nfPubClient != nil {
+		_, err := a.nfPubClient.PublishPost(ctx, &pb_nfp.PublishPostRequest{
+			UserId: newPost.UserID,
+			PostId: int64(newPost.ID),
+		})
+		if err != nil {
+			a.logger.Error("Error publishing post to newsfeed", zap.Error(err))
+			// Continue anyway, as the post is created - async event can be retried
+		}
+	}
 
 	return &pb_aap.CreatePostResponse{
 		Status: pb_aap.CreatePostResponse_OK,
@@ -62,7 +82,8 @@ func (a *AuthenticateAndPostService) EditPost(ctx context.Context, info *pb_aap.
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 		return &pb_aap.EditPostResponse{Status: pb_aap.EditPostResponse_POST_NOT_FOUND}, nil
 	}
-	if user.ID != uint(post.UserID) {
+	// Compare user ID as int64 to avoid type conversion issues
+	if int64(user.ID) != post.UserID {
 		return &pb_aap.EditPostResponse{Status: pb_aap.EditPostResponse_NOT_ALLOWED}, nil
 	}
 
@@ -74,10 +95,10 @@ func (a *AuthenticateAndPostService) EditPost(ctx context.Context, info *pb_aap.
 	}
 	if info.Visible != nil {
 		if info.GetVisible() {
-			post.DeletedAt.Valid = false
+			post.DeletedAt = nil // Not deleted - visible
 		} else {
-			post.DeletedAt.Valid = true
-			post.DeletedAt.Time = time.Now()
+			now := time.Now()
+			post.DeletedAt = &now // Deleted - not visible
 		}
 	}
 
@@ -102,14 +123,27 @@ func (a *AuthenticateAndPostService) DeletePost(ctx context.Context, info *pb_aa
 	if !exist {
 		return &pb_aap.DeletePostResponse{Status: pb_aap.DeletePostResponse_POST_NOT_FOUND}, nil
 	}
-	if user.ID != uint(post.UserID) {
+	// Compare user ID as int64 to avoid type conversion issues
+	if int64(user.ID) != post.UserID {
 		return &pb_aap.DeletePostResponse{Status: pb_aap.DeletePostResponse_NOT_ALLOWED}, nil
 	}
 
+	// Delete the post
 	err := a.db.Delete(&post).Error
 	if err != nil {
+		a.logger.Error("Error deleting post", zap.Error(err))
 		return nil, err
 	}
+
+	// Note: In a real implementation, we would need to:
+	// 1. Add a dependency on the newsfeed service client
+	// 2. Call a method to invalidate the cache for this post
+	// Something like: a.newsfeedClient.RemovePostFromNewsfeed(ctx, post.ID)
+	// But for now we'll just log that we would do this
+	a.logger.Info("Post deleted, should invalidate newsfeed cache",
+		zap.Int64("post_id", int64(post.ID)),
+		zap.Int64("user_id", post.UserID))
+
 	return &pb_aap.DeletePostResponse{
 		Status: pb_aap.DeletePostResponse_OK,
 	}, nil

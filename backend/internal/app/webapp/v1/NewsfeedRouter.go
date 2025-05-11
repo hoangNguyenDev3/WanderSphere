@@ -7,7 +7,9 @@ import (
 
 // AddNewsfeedRouter adds newsfeed-related routes to input router
 func AddNewsfeedRouter(r *gin.RouterGroup, svc *service.WebService) {
-	postRouter := r.Group("newsfeed")
+	feedRouter := r.Group("newsfeed")
 
-	postRouter.GET("", svc.GetNewsfeed)
+	// All newsfeed routes require authentication
+	feedRouter.Use(svc.AuthRequired())
+	feedRouter.GET("", svc.GetNewsfeed)
 }

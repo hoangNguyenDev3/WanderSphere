@@ -6,9 +6,20 @@ import (
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
+	client_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/newsfeed_publishing"
+	pb "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+// AuthenticateAndPostService implements the AuthenticateAndPost service
+type AuthenticateAndPostService struct {
+	pb.UnimplementedAuthenticateAndPostServer
+	db          *gorm.DB
+	nfPubClient client_nfp.Client
+	logger      *zap.Logger
+}
 
 func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*AuthenticateAndPostService, error) {
 	// Connect to database
@@ -20,18 +31,25 @@ func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*Aut
 		return nil, err
 	}
 
-	// Connect to NewsfeedPublishingClient
-	nfPubClient, err := client_nfp.NewClient(cfg.NewsfeedPublishing.Hosts)
+	// Create logger
+	var logger *zap.Logger
+	logger, err = utils.NewLogger(&cfg.Logger)
 	if err != nil {
-		return nil, err
+		// Fall back to production logger if there's an error
+		logger, _ = zap.NewProduction()
 	}
 
-	// Establish logger
-	logger, err := utils.NewLogger(&cfg.Logger)
-	if err != nil {
-		return nil, err
+	// Connect to NewsfeedPublishingClient if configured
+	var nfPubClient client_nfp.Client
+	if len(cfg.NewsfeedPublishing.Hosts) > 0 {
+		nfPubClient, err = client_nfp.NewClient(cfg.NewsfeedPublishing.Hosts)
+		if err != nil {
+			logger.Error("Failed to connect to newsfeed publishing service", zap.Error(err))
+			// Continue without newsfeed publishing client
+		}
 	}
 
+	logger.Info("AuthenticateAndPostService initialized")
 	return &AuthenticateAndPostService{
 		db:          db,
 		nfPubClient: nfPubClient,

@@ -21,8 +21,8 @@ type WebService struct {
 	AuthenticateAndPostClient pb_aap.AuthenticateAndPostClient
 	NewsfeedClient            pb_nf.NewsfeedClient
 	RedisClient               *redis.Client
-
-	Logger *zap.Logger
+	Logger                    *zap.Logger
+	Config                    *configs.WebConfig
 }
 
 func NewWebService(cfg *configs.WebConfig) (*WebService, error) {
@@ -51,5 +51,6 @@ func NewWebService(cfg *configs.WebConfig) (*WebService, error) {
 		NewsfeedClient:            nfClient,
 		RedisClient:               redisClient,
 		Logger:                    logger,
+		Config:                    cfg,
 	}, nil
 }

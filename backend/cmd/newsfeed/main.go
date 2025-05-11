@@ -14,10 +14,11 @@ import (
 
 func main() {
 	// Flags
-	cfgPath := flag.String("conf", "config.yml", "Path to config file for this service")
+	cfgPath := flag.String("conf", "configs/files/local_newsfeed.yml", "Path to config file for this service")
+	flag.Parse()
 
 	// Load configurations
-	cfg, err := configs.GetNewsfeedConfig(*cfgPath)
+	cfg, err := configs.GetNewsfeedConfigDirect(*cfgPath)
 	if err != nil {
 		log.Fatalf("failed to parse config: %v", err)
 	}
@@ -35,6 +36,8 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	pb_nf.RegisterNewsfeedServer(grpcServer, service)
+
+	log.Printf("Starting Newsfeed service on port %d", cfg.Port)
 	err = grpcServer.Serve(lis)
 	if err != nil {
 		log.Fatalf("server stopped: %v", err)

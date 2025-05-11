@@ -25,7 +25,7 @@ services:
       target: test_env
     image: aapsvc
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -43,7 +43,7 @@ services:
       target: test_env
     image: nfsvc
     depends_on:
-      mysql:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -63,6 +63,7 @@ services:
     depends_on:
       - aap
       - kafka
+      - redis
     networks:
       - intranet
     hostname: nfp
@@ -77,13 +78,21 @@ services:
     environment:
       KAFKA_BROKER_ID: 0
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
     networks:
       - intranet
     hostname: kafka
     ports:
       - 9092:9092
+    healthcheck:
+      test: kafka-topics --bootstrap-server kafka:9092 --list || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
     profiles: [ "infra", "all" ]
 
   zookeeper:
@@ -101,11 +110,12 @@ services:
   postgres:
     image: postgres
     volumes:
-      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf # Global default settings
-      - ./data/postgres:/var/lib/postgresql/data # Data of databases
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     environment:
       POSTGRES_PASSWORD: 123456
-      POSTGRES_DATABASE: wander_sphere
+      POSTGRES_DB: wander_sphere
     networks:
       - intranet
     hostname: postgres
@@ -116,7 +126,7 @@ services:
         soft: 65536
         hard: 65536
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
       timeout: 20s
       retries: 10
     profiles: [ "infra", "all" ]
@@ -135,3 +145,6 @@ services:
 networks:
   intranet: {}
   default: {}
+
+volumes:
+  postgres_data:
