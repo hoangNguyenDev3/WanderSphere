@@ -1,6 +1,6 @@
 # Common configurations for aap and nf
 postgres: &POSTGRES
-  dsn: "postgres:123456@tcp(localhost:5432)/wander_sphere?sslmode=disable"
+  dsn: "postgres:123456@tcp(localhost:5434)/wander_sphere?sslmode=disable"
   defaultStringSize: 256
   disableDatetimePrecision: true
   dontSupportRenameIndex: true

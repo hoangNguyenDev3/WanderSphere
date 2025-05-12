@@ -1,3 +1,15 @@
+// @title WanderSphere API
+// @version 1.0
+// @description API Server for WanderSphere Application
+// @contact.name API Support
+// @contact.email support@wandersphere.com
+// @host localhost:19003
+// @BasePath /api/v1
+// @schemes http https
+// @securityDefinitions.apikey ApiKeyAuth
+// @in cookie
+// @name session_id
+
 package main
 
 import (
@@ -5,6 +17,7 @@ import (
 	"log"
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	_ "github.com/hoangNguyenDev3/WanderSphere/backend/docs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp"
 )
 

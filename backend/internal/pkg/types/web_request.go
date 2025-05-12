@@ -28,10 +28,12 @@ type CreateUserRequest struct {
 }
 
 type EditUserRequest struct {
-	Password    string `json:"password" validate:"omitempty,password"`
-	FirstName   string `json:"first_name" validate:"omitempty"`
-	LastName    string `json:"last_name" validate:"omitempty"`
-	DateOfBirth string `json:"date_of_birth" validate:"omitempty,date_of_birth"`
+	Password       string `json:"password" validate:"omitempty,password"`
+	FirstName      string `json:"first_name" validate:"omitempty"`
+	LastName       string `json:"last_name" validate:"omitempty"`
+	DateOfBirth    string `json:"date_of_birth" validate:"omitempty,date_of_birth"`
+	ProfilePicture string `json:"profile_picture" validate:"omitempty,url"`
+	CoverPicture   string `json:"cover_picture" validate:"omitempty,url"`
 }
 
 type CreatePostRequest struct {
@@ -48,6 +50,12 @@ type EditPostRequest struct {
 
 type CreatePostCommentRequest struct {
 	ContentText string `json:"content_text" validate:"required"`
+}
+
+// GetS3PresignedUrlRequest represents a request to get a presigned S3 URL
+type GetS3PresignedUrlRequest struct {
+	FileName string `json:"file_name" validate:"required"`
+	FileType string `json:"file_type" validate:"required"`
 }
 
 func NewValidator() *validator.Validate {

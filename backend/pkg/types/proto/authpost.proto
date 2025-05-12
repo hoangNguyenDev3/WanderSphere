@@ -67,6 +67,8 @@ message EditUserRequest {
 	optional string first_name = 3;
 	optional string last_name = 4;
 	optional google.protobuf.Timestamp date_of_birth = 5;
+	optional string profile_picture = 6;
+	optional string cover_picture = 7;
 }
 
 message EditUserResponse {
@@ -97,6 +99,8 @@ message UserDetailInfo {
 	string last_name = 4;
 	google.protobuf.Timestamp date_of_birth = 5;
 	string email = 6;
+	string profile_picture = 7;
+	string cover_picture = 8;
 }
 
 message GetUserFollowerRequest {

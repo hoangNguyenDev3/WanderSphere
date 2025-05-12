@@ -1,7 +1,7 @@
 USERNAME = "postgres"
 PASSWORD = "123456"
 DB_HOST = "localhost"
-DB_PORT = "5432"
+DB_PORT = "5434"
 DB_NAME = "wander_sphere"
 
 # Database management
@@ -69,4 +69,4 @@ dev_webapp:
 
 # Documentation
 gen_swagger:
-	swag init -g cmd/webapp/main.go
+	swag init -g cmd/webapp/main.go --parseDependency --parseInternal

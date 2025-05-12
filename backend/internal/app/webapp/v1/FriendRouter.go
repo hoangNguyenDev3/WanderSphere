@@ -8,9 +8,15 @@ import (
 // AddFriendRouter adds friend-related routes to input router
 func AddFriendRouter(r *gin.RouterGroup, svc *service.WebService) {
 	friendRouter := r.Group("friends")
-	friendRouter.GET(":user_id/followers", svc.GetUserFollower)
-	friendRouter.GET(":user_id/followings", svc.GetUserFollowing)
-	friendRouter.POST(":following_id", svc.FollowUser)
-	friendRouter.DELETE(":following_id", svc.UnfollowUser)
+
+	// Public routes
+	friendRouter.GET(":user_id/followers", svc.GetUserFollowers)
+	friendRouter.GET(":user_id/followings", svc.GetUserFollowings)
 	friendRouter.GET(":user_id/posts", svc.GetUserPosts)
+
+	// Protected routes that require authentication
+	authRouter := friendRouter.Group("")
+	authRouter.Use(svc.AuthRequired())
+	authRouter.POST(":user_id", svc.FollowUser)
+	authRouter.DELETE(":user_id", svc.UnfollowUser)
 }

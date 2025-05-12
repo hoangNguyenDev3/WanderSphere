@@ -4,33 +4,52 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/hoangNguyenDev3/WanderSphere/backend/docs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
-	pb_nf "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed"
+	pb_newsfeed "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed"
 	"go.uber.org/zap"
 )
 
+// GetNewsfeed godoc
+// @Summary Get user's newsfeed
+// @Description Get the current user's newsfeed
+// @Tags newsfeed
+// @Accept json
+// @Produce json
+// @Success 200 {object} types.NewsfeedResponse "User's newsfeed"
+// @Failure 400 {object} types.MessageResponse "Validation error"
+// @Failure 401 {object} types.MessageResponse "Unauthorized"
+// @Failure 500 {object} types.MessageResponse "Internal server error"
+// @Router /newsfeed [get]
+// @Security ApiKeyAuth
 func (svc *WebService) GetNewsfeed(ctx *gin.Context) {
 	// Check authorization
 	_, userId, err := svc.checkSessionAuthentication(ctx)
 	if err != nil {
-		ctx.IndentedJSON(http.StatusUnauthorized, types.MessageResponse{Message: err.Error()})
+		ctx.JSON(http.StatusUnauthorized, types.MessageResponse{Message: err.Error()})
 		return
 	}
 
 	// Call GetNewsfeed service
-	resp, err := svc.NewsfeedClient.GetNewsfeed(ctx, &pb_nf.GetNewsfeedRequest{UserId: int64(userId)})
+	resp, err := svc.NewsfeedClient.GetNewsfeed(ctx, &pb_newsfeed.GetNewsfeedRequest{
+		UserId: int64(userId),
+	})
 	if err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
+		ctx.JSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
 		return
 	}
-	if resp.GetStatus() == pb_nf.GetNewsfeedResponse_NEWSFEED_EMPTY {
-		ctx.IndentedJSON(http.StatusOK, types.MessageResponse{Message: "newsfeed empty"})
+	if resp.GetStatus() == pb_newsfeed.GetNewsfeedResponse_NEWSFEED_EMPTY {
+		ctx.JSON(http.StatusOK, types.NewsfeedResponse{
+			PostsIds: []int64{}, // Return empty array
+		})
 		return
-	} else if resp.GetStatus() == pb_nf.GetNewsfeedResponse_OK {
-		ctx.IndentedJSON(http.StatusOK, types.NewsfeedResponse{PostsIds: resp.GetPostsIds()})
+	} else if resp.GetStatus() == pb_newsfeed.GetNewsfeedResponse_OK {
+		ctx.JSON(http.StatusOK, types.NewsfeedResponse{
+			PostsIds: resp.GetPostsIds(),
+		})
 		return
 	} else {
-		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
+		ctx.JSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
 		return
 	}
 }

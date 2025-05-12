@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	_ "github.com/hoangNguyenDev3/WanderSphere/backend/docs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -14,6 +15,17 @@ import (
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 )
 
+// CheckUserAuthentication godoc
+// @Summary Authenticate a user
+// @Description Login with username and password
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param login body types.LoginRequest true "Login credentials"
+// @Success 200 {object} types.LoginResponse "Login successful"
+// @Failure 400 {object} types.ErrorResponse "Validation error or authentication failed"
+// @Failure 500 {object} types.ErrorResponse "Internal server error"
+// @Router /users/login [post]
 func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 	// Validate request
 	var jsonRequest types.LoginRequest
@@ -120,9 +132,32 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 		ctx.SetSameSite(sameSite)
 		ctx.SetCookie(cookieName, sessionId, maxAge, "/", "", secure, httpOnly)
 
-		ctx.JSON(http.StatusOK, types.MessageResponse{
+		// Get user details to include in response
+		userInfo, err := svc.AuthenticateAndPostClient.GetUserDetailInfo(ctx, &pb_aap.GetUserDetailInfoRequest{
+			UserId: authentication.GetUserId(),
+		})
+
+		if err != nil {
+			ctx.JSON(http.StatusOK, types.MessageResponse{
+				Message: "Login successful",
+				Status:  "success",
+			})
+			return
+		}
+
+		// Return user details along with success message
+		ctx.JSON(http.StatusOK, types.LoginResponse{
 			Message: "Login successful",
-			Status:  "success",
+			User: types.UserDetailInfo{
+				UserID:         userInfo.GetUser().GetUserId(),
+				UserName:       userInfo.GetUser().GetUserName(),
+				FirstName:      userInfo.GetUser().GetFirstName(),
+				LastName:       userInfo.GetUser().GetLastName(),
+				DateOfBirth:    userInfo.GetUser().GetDateOfBirth().AsTime().Format(time.DateOnly),
+				Email:          userInfo.GetUser().GetEmail(),
+				ProfilePicture: "",
+				CoverPicture:   "",
+			},
 		})
 		return
 	} else {
@@ -135,6 +170,17 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 	}
 }
 
+// CreateUser godoc
+// @Summary Register a new user
+// @Description Create a new user account
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body types.CreateUserRequest true "User registration information"
+// @Success 200 {object} types.MessageResponse "User created successfully"
+// @Failure 400 {object} types.MessageResponse "Validation error or user already exists"
+// @Failure 500 {object} types.MessageResponse "Internal server error"
+// @Router /users/signup [post]
 func (svc *WebService) CreateUser(ctx *gin.Context) {
 	// Validate request
 	var jsonRequest types.CreateUserRequest
@@ -182,6 +228,19 @@ func (svc *WebService) CreateUser(ctx *gin.Context) {
 	}
 }
 
+// EditUser godoc
+// @Summary Edit user profile
+// @Description Update user profile information
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body types.EditUserRequest true "User information to update"
+// @Success 200 {object} types.MessageResponse "User updated successfully"
+// @Failure 400 {object} types.MessageResponse "Validation error or user not found"
+// @Failure 401 {object} types.MessageResponse "Unauthorized"
+// @Failure 500 {object} types.MessageResponse "Internal server error"
+// @Router /users/edit [post]
+// @Security ApiKeyAuth
 func (svc *WebService) EditUser(ctx *gin.Context) {
 	// Check authorization
 	_, userId, err := svc.checkSessionAuthentication(ctx)
@@ -224,6 +283,10 @@ func (svc *WebService) EditUser(ctx *gin.Context) {
 		dateOfBirth = timestamppb.New(dob)
 	}
 
+	// These are declared but not used currently until the proto is updated
+	_ = jsonRequest.ProfilePicture
+	_ = jsonRequest.CoverPicture
+
 	// Call EditUser service
 	resp, err := svc.AuthenticateAndPostClient.EditUser(ctx, &pb_aap.EditUserRequest{
 		UserId:       int64(userId),
@@ -248,11 +311,22 @@ func (svc *WebService) EditUser(ctx *gin.Context) {
 	}
 }
 
+// GetUserDetailInfo godoc
+// @Summary Get user details
+// @Description Get detailed information about a user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user_id path int true "User ID"
+// @Success 200 {object} types.UserDetailInfoResponse "User details"
+// @Failure 400 {object} types.MessageResponse "Invalid user ID or user not found"
+// @Failure 500 {object} types.MessageResponse "Internal server error"
+// @Router /users/{user_id} [get]
 func (svc *WebService) GetUserDetailInfo(ctx *gin.Context) {
 	// Check URL params
 	userId, err := strconv.Atoi(ctx.Param("user_id"))
 	if err != nil {
-		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "post not found"})
+		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
 		return
 	}
 
@@ -268,13 +342,15 @@ func (svc *WebService) GetUserDetailInfo(ctx *gin.Context) {
 		ctx.IndentedJSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
 		return
 	} else if resp.GetStatus() == pb_aap.GetUserDetailInfoResponse_OK {
-		ctx.IndentedJSON(http.StatusAccepted, types.UserDetailInfoResponse{
-			UserID:      resp.GetUser().GetUserId(),
-			UserName:    resp.GetUser().GetUserName(),
-			FirstName:   resp.GetUser().GetFirstName(),
-			LastName:    resp.GetUser().GetLastName(),
-			DateOfBirth: resp.GetUser().GetDateOfBirth().AsTime().Format(time.DateOnly),
-			Email:       resp.GetUser().GetEmail(),
+		ctx.IndentedJSON(http.StatusOK, types.UserDetailInfoResponse{
+			UserID:         resp.GetUser().GetUserId(),
+			UserName:       resp.GetUser().GetUserName(),
+			FirstName:      resp.GetUser().GetFirstName(),
+			LastName:       resp.GetUser().GetLastName(),
+			DateOfBirth:    resp.GetUser().GetDateOfBirth().AsTime().Format(time.DateOnly),
+			Email:          resp.GetUser().GetEmail(),
+			ProfilePicture: "",
+			CoverPicture:   "",
 		})
 		return
 	} else {

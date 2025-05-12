@@ -16,5 +16,5 @@ func AddUserRouter(r *gin.RouterGroup, svc *service.WebService) {
 	// Protected routes that require authentication
 	authRouter := userRouter.Group("")
 	authRouter.Use(svc.AuthRequired())
-	authRouter.POST("edit", svc.EditUser)
+	authRouter.PUT("edit", svc.EditUser)
 }

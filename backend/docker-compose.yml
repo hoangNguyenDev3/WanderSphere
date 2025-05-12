@@ -120,7 +120,7 @@ services:
       - intranet
     hostname: postgres
     ports:
-      - 5432:5432
+      - 5434:5432
     ulimits:
       nofile:
         soft: 65536
