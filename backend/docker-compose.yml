@@ -16,6 +16,8 @@ services:
     hostname: web
     ports:
       - 19003:19003
+    volumes:
+      - ./config.yaml:/app/config.yaml
     profiles: [ "web", "all" ]
 
   aap:
@@ -34,6 +36,8 @@ services:
     hostname: aap
     ports:
       - 19001:19001
+    volumes:
+      - ./config.yaml:/app/config.yaml
     profiles: [ "aap", "all" ]
 
   newsfeed:
@@ -52,6 +56,8 @@ services:
     hostname: nf
     ports:
       - 19002:19002
+    volumes:
+      - ./config.yaml:/app/config.yaml
     profiles: [ "newsfeed", "all" ]
 
   nfp:
@@ -69,6 +75,8 @@ services:
     hostname: nfp
     ports:
       - 19004:19004
+    volumes:
+      - ./config.yaml:/app/config.yaml
     profiles: [ "nfp", "all" ]
 
   kafka:
@@ -116,6 +124,7 @@ services:
     environment:
       POSTGRES_PASSWORD: 123456
       POSTGRES_DB: wander_sphere
+      POSTGRES_USER: postgres
     networks:
       - intranet
     hostname: postgres

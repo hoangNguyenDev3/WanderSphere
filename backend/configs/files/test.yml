@@ -2,64 +2,70 @@
 # This is a shared config file used by multiple services in Docker environment
 # Each service will only use the sections relevant to it
 
-# AuthPost Service Configuration
-authpost:
+# Common configurations for aap and nf
+postgres: &POSTGRES
+  dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere sslmode=disable"
+  defaultStringSize: 256
+  disableDatetimePrecision: true
+  dontSupportRenameIndex: true
+  skipInitializeWithVersion: false
+redis: &REDIS
+  addr: redis:6379
+
+kafka: &KAFKA
+  topic: "wander_sphere"
+  brokers: ["kafka:9092"]
+
+logger: &LOGGER
+  level: "debug"
+
+# Common auth configuration
+auth: &AUTH
+  session:
+    cookie_name: "wandersphere_session"
+    expiration_minutes: 1440  # 24 hours
+    secure: true
+    http_only: true
+    same_site: "strict"
+
+# Configuration for aap service connection
+authenticate_and_post_config: &AAP
   port: 19001
-  postgres:
-    dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere sslmode=disable"
-    defaultStringSize: 256
-    disableDatetimePrecision: true
-    dontSupportRenameIndex: true
-    skipInitializeWithVersion: false
-  redis:
-    addr: "redis:6379"
-    password: ""
-  logger:
-    level: "debug"
-    path: "logs/authpost.log" 
-  auth:
-    session:
-      cookie_name: "wandersphere_session"
-      expiration_minutes: 1440  # 24 hours
-      secure: true
-      http_only: true
-      same_site: "strict"
+  logger: *LOGGER
+  postgres: *POSTGRES
+  redis: *REDIS
+  newsfeed_publishing:
+    hosts: ["nfp:19004"]
+  auth: *AUTH
 
-# Newsfeed Service Configuration 
-newsfeed:
+# Configuration for nf service connection
+newsfeed_config: &NF
   port: 19002
-  postgres:
-    dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere sslmode=disable"
-  redis:
-    addr: "redis:6379"
-    password: ""
-  logger:
-    level: "debug"
-    path: "logs/newsfeed.log"
-
-# Newsfeed Publishing Service Configuration
-newsfeed_publishing:
-  port: 19004
-  redis:
-    addr: "redis:6379"
-    password: ""
-    db: 0
-  kafka:
-    topic: "wander_sphere"
-    brokers: ["kafka:9092"]
+  logger: *LOGGER
+  postgres: *POSTGRES
+  redis: *REDIS
+  kafka: *KAFKA
   authenticate_and_post:
     hosts: ["aap:19001"]
-  logger:
-    level: "debug"
-    path: "logs/newsfeed_publishing.log"
 
-# WebApp Service Configuration
-webapp:
+# Configuration for nfp service connection
+newsfeed_publishing_config: &NFP
+  port: 19004
+  logger: *LOGGER
+  redis: *REDIS
+  kafka: *KAFKA
+  authenticate_and_post:
+    hosts: ["aap:19001"]
+
+# Configurations for web app
+web_config:
+  # Connection configs
   port: 19003
+  logger: *LOGGER
+  api_version: ["v1"]
+  authenticate_and_post:
+    hosts: ["aap:19001"]
   newsfeed:
     hosts: ["nf:19002"]
-  authpost:
-    hosts: ["aap:19001"]
-  logger:
-    level: "debug"
-    path: "logs/webapp.log" 
+  redis: *REDIS
+  auth: *AUTH 

@@ -70,3 +70,31 @@ dev_webapp:
 # Documentation
 gen_swagger:
 	swag init -g cmd/webapp/main.go --parseDependency --parseInternal
+
+# Test commands
+.PHONY: test test-verbose test-coverage test-integration
+
+# Run all tests
+test:
+	go test ./...
+
+# Run tests with verbose output
+test-verbose:
+	go test -v ./...
+
+# Run specific test suite
+test-webapp:
+	go test -v ./internal/app/webapp/tests
+
+# Run tests with coverage report
+test-coverage:
+	go test -cover ./...
+	
+# Run tests with coverage report and output to HTML
+test-coverage-html:
+	go test -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out
+
+# Run integration tests (requires running services)
+test-integration:
+	go test -v -tags=integration ./...

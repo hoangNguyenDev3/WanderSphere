@@ -1,16 +1,16 @@
 # Common configurations for aap and nf
 postgres: &POSTGRES
-  dsn: "postgres:123456@tcp(localhost:5434)/wander_sphere?sslmode=disable"
+  dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere sslmode=disable"
   defaultStringSize: 256
   disableDatetimePrecision: true
   dontSupportRenameIndex: true
   skipInitializeWithVersion: false
 redis: &REDIS
-  addr: localhost:6379
+  addr: redis:6379
 
 kafka: &KAFKA
   topic: "wander_sphere"
-  brokers: ["localhost:9092"]
+  brokers: ["kafka:9092"]
 
 logger: &LOGGER
   level: "debug"
@@ -31,7 +31,7 @@ authenticate_and_post_config: &AAP
   postgres: *POSTGRES
   redis: *REDIS
   newsfeed_publishing:
-    hosts: ["localhost:19004"]
+    hosts: ["nfp:19004"]
   auth: *AUTH
 
 # Configuration for nf service connection
@@ -42,7 +42,7 @@ newsfeed_config: &NF
   redis: *REDIS
   kafka: *KAFKA
   authenticate_and_post:
-    hosts: ["localhost:19001"]
+    hosts: ["aap:19001"]
 
 # Configuration for nfp service connection
 newsfeed_publishing_config: &NFP
@@ -51,7 +51,7 @@ newsfeed_publishing_config: &NFP
   redis: *REDIS
   kafka: *KAFKA
   authenticate_and_post:
-    hosts: ["localhost:19001"]
+    hosts: ["aap:19001"]
 
 # Configurations for web app
 web_config:
@@ -60,8 +60,8 @@ web_config:
   logger: *LOGGER
   api_version: ["v1"]
   authenticate_and_post:
-    hosts: ["localhost:19001"]
+    hosts: ["aap:19001"]
   newsfeed:
-    hosts: ["localhost:19002"]
+    hosts: ["nf:19002"]
   redis: *REDIS
   auth: *AUTH
