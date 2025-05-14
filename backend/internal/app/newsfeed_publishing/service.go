@@ -175,6 +175,23 @@ func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*Newsf
 	return svc, nil
 }
 
+// Getter methods for health checks
+func (svc *NewsfeedPublishingService) GetLogger() *zap.Logger {
+	return svc.logger
+}
+
+func (svc *NewsfeedPublishingService) GetRedis() *redis.Client {
+	return svc.redisClient
+}
+
+func (svc *NewsfeedPublishingService) IsKafkaAvailable() bool {
+	return svc.kafkaAvailable
+}
+
+func (svc *NewsfeedPublishingService) IsRedisAvailable() bool {
+	return svc.redisAvailable
+}
+
 // Create logger helper function
 func createLogger(cfg *configs.NewsfeedPublishingConfig) (*zap.Logger, error) {
 	loggerCfg := zap.NewDevelopmentConfig()

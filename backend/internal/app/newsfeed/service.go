@@ -51,6 +51,15 @@ func NewNewsfeedService(cfg *configs.NewsfeedConfig) (*NewsfeedService, error) {
 	}, nil
 }
 
+// Getter methods for health checks
+func (svc *NewsfeedService) GetLogger() *zap.Logger {
+	return svc.logger
+}
+
+func (svc *NewsfeedService) GetRedis() *redis.Client {
+	return svc.redisClient
+}
+
 // GetNewsfeed retrieves the latest posts for a user's feed
 // This implementation uses LRANGE instead of LPopCount to avoid destructive reads
 func (svc *NewsfeedService) GetNewsfeed(ctx context.Context, request *pb_nf.GetNewsfeedRequest) (*pb_nf.GetNewsfeedResponse, error) {

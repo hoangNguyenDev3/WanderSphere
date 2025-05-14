@@ -69,7 +69,22 @@ dev_webapp:
 
 # Documentation
 gen_swagger:
-	swag init -g cmd/webapp/main.go --parseDependency --parseInternal
+	swag init -g cmd/webapp/main.go --parseDependency --parseInternal --exclude .git,logs,personal --output docs
+
+# Serve swagger documentation (requires swagger-ui or similar tool)
+serve_swagger:
+	@echo "📊 Swagger documentation generated at docs/"
+	@echo "📋 JSON: http://localhost:19003/swagger/doc.json"
+	@echo "🌐 UI: http://localhost:19003/swagger/index.html"
+	@echo "💡 Make sure the web service is running: make docker_webapp"
+
+# Health checks for all services
+health_check:
+	@echo "🔍 Checking service health..."
+	@echo "AuthPost (19101):" && curl -s http://localhost:19101/health || echo "❌ Not responding"
+	@echo "Newsfeed (19102):" && curl -s http://localhost:19102/health || echo "❌ Not responding"  
+	@echo "Web (19003):" && curl -s http://localhost:19003/health || echo "❌ Not responding"
+	@echo "NFP (19104):" && curl -s http://localhost:19104/health || echo "❌ Not responding"
 
 # Test commands
 .PHONY: test test-verbose test-coverage test-integration

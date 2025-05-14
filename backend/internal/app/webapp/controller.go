@@ -2,6 +2,7 @@ package webapp
 
 import (
 	"fmt"
+	"net/http"
 
 	"net/http/pprof"
 
@@ -9,14 +10,16 @@ import (
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/service"
 	v1 "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/v1"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 type WebController struct {
-	webService service.WebService
-	router     *gin.Engine
-	port       int
+	webService    service.WebService
+	router        *gin.Engine
+	port          int
+	healthChecker *utils.HealthChecker
 }
 
 func (wc *WebController) Run() {
@@ -31,8 +34,15 @@ func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
 		return nil, err
 	}
 
+	// Create health checker
+	healthChecker := utils.NewHealthChecker("web", "1.0.0", webService.GetLogger())
+
 	// Init router
 	router := gin.Default()
+
+	// Add health check endpoints
+	initHealth(router, healthChecker, webService)
+
 	for _, version := range cfg.APIVersions {
 		verXRouter := router.Group(fmt.Sprint("/api/" + version))
 		if version == "v1" { // TODO: Automate this when a new vision is added
@@ -45,10 +55,42 @@ func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
 	initPprof(router)
 
 	return &WebController{
-		webService: *webService,
-		router:     router,
-		port:       cfg.Port,
+		webService:    *webService,
+		router:        router,
+		port:          cfg.Port,
+		healthChecker: healthChecker,
 	}, nil
+}
+
+func initHealth(router *gin.Engine, healthChecker *utils.HealthChecker, webService *service.WebService) {
+	// Basic health endpoint
+	router.GET("/health", func(c *gin.Context) {
+		status := healthChecker.GetHealthStatus()
+		c.JSON(http.StatusOK, status)
+	})
+
+	// Detailed health endpoint with dependencies
+	router.GET("/health/detailed", func(c *gin.Context) {
+		status := healthChecker.GetDetailedHealthStatus(nil, webService.GetRedis())
+
+		// Add web service specific dependencies
+		healthChecker.AddDependencyStatus(status.Dependencies, "authpost", "healthy") // Assume healthy since service started
+		healthChecker.AddDependencyStatus(status.Dependencies, "newsfeed", "healthy") // Assume healthy since service started
+
+		// Determine overall status based on dependencies
+		for _, depStatus := range status.Dependencies {
+			if depStatus == "unhealthy" {
+				status.Status = "degraded"
+				break
+			}
+		}
+
+		statusCode := http.StatusOK
+		if status.Status == "degraded" {
+			statusCode = http.StatusServiceUnavailable
+		}
+		c.JSON(statusCode, status)
+	})
 }
 
 func initSwagger(router *gin.Engine) {

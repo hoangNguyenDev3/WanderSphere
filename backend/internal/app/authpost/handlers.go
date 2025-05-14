@@ -14,6 +14,21 @@ import (
 
 // CheckUserAuthentication verifies user credentials
 func (s *AuthenticateAndPostService) CheckUserAuthentication(ctx context.Context, req *pb.CheckUserAuthenticationRequest) (*pb.CheckUserAuthenticationResponse, error) {
+	// Input validation
+	if req == nil {
+		return nil, errors.New("request cannot be nil")
+	}
+	if req.UserName == "" {
+		return &pb.CheckUserAuthenticationResponse{
+			Status: pb.CheckUserAuthenticationResponse_USER_NOT_FOUND,
+		}, nil
+	}
+	if req.UserPassword == "" {
+		return &pb.CheckUserAuthenticationResponse{
+			Status: pb.CheckUserAuthenticationResponse_WRONG_PASSWORD,
+		}, nil
+	}
+
 	s.logger.Debug("CheckUserAuthentication request received", zap.String("username", req.UserName))
 
 	// Find user by username (data layer interaction)
@@ -43,6 +58,21 @@ func (s *AuthenticateAndPostService) CheckUserAuthentication(ctx context.Context
 
 // CreateUser creates a new user
 func (s *AuthenticateAndPostService) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+	// Input validation
+	if req == nil {
+		return nil, errors.New("request cannot be nil")
+	}
+	if req.UserName == "" {
+		return &pb.CreateUserResponse{
+			Status: pb.CreateUserResponse_USERNAME_EXISTED,
+		}, nil
+	}
+	if req.UserPassword == "" {
+		return &pb.CreateUserResponse{
+			Status: pb.CreateUserResponse_USERNAME_EXISTED,
+		}, nil
+	}
+
 	s.logger.Debug("CreateUser request received", zap.String("username", req.UserName))
 
 	// Check if username already exists
@@ -91,6 +121,16 @@ func (s *AuthenticateAndPostService) CreateUser(ctx context.Context, req *pb.Cre
 
 // GetUserDetailInfo retrieves user details
 func (s *AuthenticateAndPostService) GetUserDetailInfo(ctx context.Context, req *pb.GetUserDetailInfoRequest) (*pb.GetUserDetailInfoResponse, error) {
+	// Input validation
+	if req == nil {
+		return nil, errors.New("request cannot be nil")
+	}
+	if req.UserId <= 0 {
+		return &pb.GetUserDetailInfoResponse{
+			Status: pb.GetUserDetailInfoResponse_USER_NOT_FOUND,
+		}, nil
+	}
+
 	s.logger.Debug("GetUserDetailInfo request received", zap.Int64("user_id", req.UserId))
 
 	// Find user
@@ -117,6 +157,16 @@ func (s *AuthenticateAndPostService) GetUserDetailInfo(ctx context.Context, req 
 
 // EditUser updates user information
 func (s *AuthenticateAndPostService) EditUser(ctx context.Context, req *pb.EditUserRequest) (*pb.EditUserResponse, error) {
+	// Input validation
+	if req == nil {
+		return nil, errors.New("request cannot be nil")
+	}
+	if req.UserId <= 0 {
+		return &pb.EditUserResponse{
+			Status: pb.EditUserResponse_USER_NOT_FOUND,
+		}, nil
+	}
+
 	s.logger.Debug("EditUser called", zap.Int64("user_id", req.UserId))
 
 	// Find user

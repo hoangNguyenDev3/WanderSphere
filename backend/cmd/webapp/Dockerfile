@@ -13,10 +13,10 @@ FROM alpine:latest AS test_env
 WORKDIR /app
 COPY --from=builder /app/webapp.linux .
 COPY --from=builder /app/configs /app/configs
-CMD ["/app/webapp.linux", "-conf", "configs/files/test.yml"]
+CMD ["/app/webapp.linux"]
 
 FROM alpine:latest AS live_env
 WORKDIR /app
 COPY --from=builder /app/webapp.linux .
 COPY --from=builder /app/configs /app/configs
-CMD ["/app/webapp.linux", "-conf", "configs/files/live.yml"]
+CMD ["/app/webapp.linux"]

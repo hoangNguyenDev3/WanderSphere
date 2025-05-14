@@ -2,6 +2,7 @@ package authpost
 
 import (
 	"context"
+	"errors"
 	"log"
 
 	"math/rand"
@@ -27,7 +28,7 @@ func NewClient(hosts []string) (pb_aap.AuthenticateAndPostClient, error) {
 	}
 
 	if len(clients) == 0 {
-		return nil, log.Output(1, "no available authpost service hosts")
+		return nil, errors.New("no available authpost service hosts")
 	}
 
 	return &randomClient{clients: clients}, nil

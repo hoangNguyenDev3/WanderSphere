@@ -2,6 +2,7 @@ package authpost
 
 import (
 	"errors"
+	"time"
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
@@ -31,6 +32,15 @@ func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*Aut
 		return nil, err
 	}
 
+	// Configure connection pooling
+	sqlDB, err := db.DB()
+	if err != nil {
+		return nil, err
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
 	// Create logger
 	var logger *zap.Logger
 	logger, err = utils.NewLogger(&cfg.Logger)
@@ -55,6 +65,20 @@ func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*Aut
 		nfPubClient: nfPubClient,
 		logger:      logger,
 	}, nil
+}
+
+// Getter methods for health checks
+func (a *AuthenticateAndPostService) GetDB() *gorm.DB {
+	return a.db
+}
+
+func (a *AuthenticateAndPostService) GetLogger() *zap.Logger {
+	return a.logger
+}
+
+func (a *AuthenticateAndPostService) GetRedis() interface{} {
+	// AuthPost service doesn't directly use Redis, return nil
+	return nil
 }
 
 // findUserById checks if an user with provided userId exists in database

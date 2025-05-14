@@ -15,6 +15,7 @@ package main
 import (
 	"flag"
 	"log"
+	"os"
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	_ "github.com/hoangNguyenDev3/WanderSphere/backend/docs"
@@ -22,12 +23,16 @@ import (
 )
 
 func main() {
-	// Flags
-	cfgPath := flag.String("conf", "configs/files/local_webapp.yml", "Path to config file for this service")
+	// Flags - use environment-aware default config path
+	defaultPath := os.Getenv("CONFIG_PATH")
+	if defaultPath == "" {
+		defaultPath = "/app/config.yaml"
+	}
+	cfgPath := flag.String("conf", defaultPath, "Path to config file for this service")
 	flag.Parse()
 
-	// Load configs
-	cfg, err := configs.GetWebConfigDirect(*cfgPath)
+	// Load configs - use the function that extracts the specific section
+	cfg, err := configs.GetWebConfig(*cfgPath)
 	if err != nil {
 		log.Fatalf("failed to parse config: %v", err)
 		return

@@ -18,6 +18,16 @@ func NewLogger(cfg *configs.LoggerConfig) (*zap.Logger, error) {
 		level = zapcore.InfoLevel
 	}
 
+	// Determine output paths based on whether log file path is provided
+	outputPaths := []string{"stdout"}
+	errorOutputPaths := []string{"stderr"}
+
+	// Only add file path if it's not empty
+	if cfg.Path != "" {
+		outputPaths = append(outputPaths, cfg.Path)
+		errorOutputPaths = append(errorOutputPaths, cfg.Path)
+	}
+
 	// Create logger config
 	config := zap.Config{
 		Level:       zap.NewAtomicLevelAt(level),
@@ -37,8 +47,8 @@ func NewLogger(cfg *configs.LoggerConfig) (*zap.Logger, error) {
 			EncodeDuration: zapcore.SecondsDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		},
-		OutputPaths:      []string{cfg.Path, "stdout"},
-		ErrorOutputPaths: []string{cfg.Path, "stderr"},
+		OutputPaths:      outputPaths,
+		ErrorOutputPaths: errorOutputPaths,
 	}
 
 	return config.Build()

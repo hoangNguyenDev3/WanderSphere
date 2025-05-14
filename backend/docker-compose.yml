@@ -16,6 +16,7 @@ services:
     hostname: web
     ports:
       - 19003:19003
+      - 19103:19103
     volumes:
       - ./config.yaml:/app/config.yaml
     profiles: [ "web", "all" ]
@@ -36,6 +37,7 @@ services:
     hostname: aap
     ports:
       - 19001:19001
+      - 19101:19101
     volumes:
       - ./config.yaml:/app/config.yaml
     profiles: [ "aap", "all" ]
@@ -56,6 +58,7 @@ services:
     hostname: nf
     ports:
       - 19002:19002
+      - 19102:19102
     volumes:
       - ./config.yaml:/app/config.yaml
     profiles: [ "newsfeed", "all" ]
@@ -75,6 +78,7 @@ services:
     hostname: nfp
     ports:
       - 19004:19004
+      - 19104:19104
     volumes:
       - ./config.yaml:/app/config.yaml
     profiles: [ "nfp", "all" ]

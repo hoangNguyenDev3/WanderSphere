@@ -13,10 +13,10 @@ FROM alpine:latest AS test_env
 WORKDIR /app
 COPY --from=builder /app/newsfeed_publishing.linux .
 COPY --from=builder /app/configs /app/configs
-CMD ["/app/newsfeed_publishing.linux", "-conf", "configs/files/newsfeed_publishing.yml"]
+CMD ["/app/newsfeed_publishing.linux"]
 
 FROM alpine:latest AS live_env
 WORKDIR /app
 COPY --from=builder /app/newsfeed_publishing.linux .
 COPY --from=builder /app/configs /app/configs
-CMD ["/app/newsfeed_publishing.linux", "-conf", "configs/files/live.yml"]
+CMD ["/app/newsfeed_publishing.linux"]

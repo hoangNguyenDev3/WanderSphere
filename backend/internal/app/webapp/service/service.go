@@ -54,3 +54,16 @@ func NewWebService(cfg *configs.WebConfig) (*WebService, error) {
 		Config:                    cfg,
 	}, nil
 }
+
+// Getter methods for health checks
+func (ws *WebService) GetLogger() *zap.Logger {
+	return ws.Logger
+}
+
+func (ws *WebService) GetRedis() *redis.Client {
+	return ws.RedisClient
+}
+
+func (ws *WebService) GetConfig() *configs.WebConfig {
+	return ws.Config
+}
