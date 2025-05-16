@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -433,7 +434,7 @@ func (svc *WebService) LikePost(ctx *gin.Context) {
 // @Security ApiKeyAuth
 func (svc *WebService) GetS3PresignedUrl(ctx *gin.Context) {
 	// Check authorization
-	_, _, err := svc.checkSessionAuthentication(ctx)
+	_, userId, err := svc.checkSessionAuthentication(ctx)
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, types.MessageResponse{Message: err.Error()})
 		return
@@ -452,13 +453,30 @@ func (svc *WebService) GetS3PresignedUrl(ctx *gin.Context) {
 		return
 	}
 
-	// TODO: Implement S3 presigned URL generation
-	// This would typically involve using the AWS SDK to generate a presigned URL
-	// For now, we'll return a placeholder response
+	// Development mock S3 service
+	// In production, this would use AWS SDK to generate actual presigned URLs
+	if svc.isDevelopmentMode() {
+		expirationTime := time.Now().Add(15 * time.Minute)
+		mockURL := fmt.Sprintf("https://wandersphere-dev-bucket.s3.amazonaws.com/uploads/user_%d/%s?signature=mock_dev_signature",
+			userId, jsonRequest.FileName)
 
-	expirationTime := time.Now().Add(15 * time.Minute)
-	ctx.JSON(http.StatusOK, types.GetS3PresignedUrlResponse{
-		URL:            "https://s3.example.com/bucket/path/" + jsonRequest.FileName,
-		ExpirationTime: expirationTime.Format(time.RFC3339),
+		ctx.JSON(http.StatusOK, types.GetS3PresignedUrlResponse{
+			URL:            mockURL,
+			ExpirationTime: expirationTime.Format(time.RFC3339),
+		})
+		return
+	}
+
+	// TODO: Implement production S3 presigned URL generation
+	// This would typically involve using the AWS SDK to generate a presigned URL
+	ctx.JSON(http.StatusServiceUnavailable, types.MessageResponse{
+		Message: "S3 service not configured for production use",
 	})
+}
+
+// isDevelopmentMode checks if the service is running in development mode
+func (svc *WebService) isDevelopmentMode() bool {
+	// Check if we're in development mode (can be based on config, env vars, etc.)
+	// For now, assume development if no specific production S3 config is set
+	return true // In development, always return true
 }

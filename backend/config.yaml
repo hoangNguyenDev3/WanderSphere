@@ -20,7 +20,7 @@ auth: &AUTH
   session:
     cookie_name: "wandersphere_session"
     expiration_minutes: 1440  # 24 hours
-    secure: true
+    secure: false
     http_only: true
     same_site: "strict"
 

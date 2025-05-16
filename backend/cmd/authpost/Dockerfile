@@ -13,10 +13,12 @@ FROM alpine:latest AS test_env
 WORKDIR /app
 COPY --from=builder /app/authpost.linux .
 COPY --from=builder /app/configs /app/configs
+COPY --from=builder /app/migrations /app/migrations
 CMD ["/app/authpost.linux"]
 
 FROM alpine:latest AS live_env
 WORKDIR /app
 COPY --from=builder /app/authpost.linux .
 COPY --from=builder /app/configs /app/configs
+COPY --from=builder /app/migrations /app/migrations
 CMD ["/app/authpost.linux"]

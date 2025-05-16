@@ -20,7 +20,7 @@ var validate = types.NewValidator()
 type WebService struct {
 	AuthenticateAndPostClient pb_aap.AuthenticateAndPostClient
 	NewsfeedClient            pb_nf.NewsfeedClient
-	RedisClient               *redis.Client
+	RedisPool                 *utils.RedisPool
 	Logger                    *zap.Logger
 	Config                    *configs.WebConfig
 }
@@ -36,20 +36,24 @@ func NewWebService(cfg *configs.WebConfig) (*WebService, error) {
 		return nil, err
 	}
 
-	redisClient := redis.NewClient(&redis.Options{Addr: cfg.Redis.Addr, Password: cfg.Redis.Password})
-	if redisClient == nil {
-		return nil, errors.New("redis connection failed")
-	}
-
 	logger, err := utils.NewLogger(&cfg.Logger)
 	if err != nil {
 		return nil, err
 	}
 
+	// Use enhanced Redis connection pool
+	redisPool, err := utils.NewRedisPool(&cfg.Redis, logger)
+	if err != nil {
+		logger.Error("Failed to create Redis connection pool", zap.Error(err))
+		return nil, errors.New("redis connection pool creation failed")
+	}
+
+	logger.Info("Successfully initialized enhanced Redis connection pool for Web service")
+
 	return &WebService{
 		AuthenticateAndPostClient: aapClient,
 		NewsfeedClient:            nfClient,
-		RedisClient:               redisClient,
+		RedisPool:                 redisPool,
 		Logger:                    logger,
 		Config:                    cfg,
 	}, nil
@@ -61,9 +65,24 @@ func (ws *WebService) GetLogger() *zap.Logger {
 }
 
 func (ws *WebService) GetRedis() *redis.Client {
-	return ws.RedisClient
+	if ws.RedisPool != nil {
+		return ws.RedisPool.Client
+	}
+	return nil
+}
+
+func (ws *WebService) GetRedisPool() *utils.RedisPool {
+	return ws.RedisPool
 }
 
 func (ws *WebService) GetConfig() *configs.WebConfig {
 	return ws.Config
+}
+
+// Close gracefully closes the web service resources
+func (ws *WebService) Close() error {
+	if ws.RedisPool != nil {
+		return ws.RedisPool.Close()
+	}
+	return nil
 }

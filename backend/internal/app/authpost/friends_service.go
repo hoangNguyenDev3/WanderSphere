@@ -5,6 +5,7 @@ import (
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	"go.uber.org/zap"
 )
 
 func (a *AuthenticateAndPostService) GetUserFollower(ctx context.Context, info *pb_aap.GetUserFollowerRequest) (*pb_aap.GetUserFollowerResponse, error) {
@@ -56,6 +57,17 @@ func (a *AuthenticateAndPostService) GetUserFollowing(ctx context.Context, info 
 }
 
 func (a *AuthenticateAndPostService) FollowUser(ctx context.Context, info *pb_aap.FollowUserRequest) (*pb_aap.FollowUserResponse, error) {
+	a.logger.Info("FollowUser request received",
+		zap.Int64("user_id", info.GetUserId()),
+		zap.Int64("following_id", info.GetFollowingId()))
+
+	// Check if user is trying to follow themselves
+	if info.GetUserId() == info.GetFollowingId() {
+		a.logger.Info("Self-follow attempt detected, preventing",
+			zap.Int64("user_id", info.GetUserId()))
+		return &pb_aap.FollowUserResponse{Status: pb_aap.FollowUserResponse_ALREADY_FOLLOWED}, nil
+	}
+
 	// Check if the user exists
 	exist, _ := a.findUserById(info.GetUserId())
 	if !exist {

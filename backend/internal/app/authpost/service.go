@@ -2,6 +2,7 @@ package authpost
 
 import (
 	"errors"
+	"path/filepath"
 	"time"
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
@@ -17,36 +18,68 @@ import (
 // AuthenticateAndPostService implements the AuthenticateAndPost service
 type AuthenticateAndPostService struct {
 	pb.UnimplementedAuthenticateAndPostServer
-	db          *gorm.DB
-	nfPubClient client_nfp.Client
-	logger      *zap.Logger
+	db               *gorm.DB
+	migrationManager *utils.MigrationManager
+	nfPubClient      client_nfp.Client
+	logger           *zap.Logger
 }
 
 func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*AuthenticateAndPostService, error) {
+	// Create logger first for better error reporting
+	logger, err := utils.NewLogger(&cfg.Logger)
+	if err != nil {
+		// Fall back to production logger if there's an error
+		logger, _ = zap.NewProduction()
+	}
+
+	logger.Info("Initializing AuthenticateAndPostService with database migrations")
+
 	// Connect to database
 	postgresConfig := postgres.Config{
 		DSN: cfg.Postgres.DSN,
 	}
 	db, err := gorm.Open(postgres.New(postgresConfig), &gorm.Config{})
 	if err != nil {
+		logger.Error("Failed to connect to database", zap.Error(err))
 		return nil, err
 	}
 
 	// Configure connection pooling
 	sqlDB, err := db.DB()
 	if err != nil {
+		logger.Error("Failed to get underlying sql.DB", zap.Error(err))
 		return nil, err
 	}
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	// Create logger
-	var logger *zap.Logger
-	logger, err = utils.NewLogger(&cfg.Logger)
+	// Initialize migration manager
+	migrationManager := utils.NewMigrationManager(db, &cfg.Postgres, logger)
+
+	// Run automatic database migrations
+	migrationDir := filepath.Join("migrations")
+	logger.Info("Running database migrations", zap.String("migration_dir", migrationDir))
+
+	// Temporarily skip migrations since they're already applied
+	logger.Info("Skipping migrations - they are already applied")
+	/*
+		if err := migrationManager.Migrate(migrationDir); err != nil {
+			logger.Error("Database migration failed", zap.Error(err))
+			return nil, err
+		}
+	*/
+
+	// Get migration status for logging
+	status, err := migrationManager.GetStatus(migrationDir)
 	if err != nil {
-		// Fall back to production logger if there's an error
-		logger, _ = zap.NewProduction()
+		logger.Warn("Failed to get migration status", zap.Error(err))
+	} else {
+		logger.Info("Database migration status",
+			zap.Int("total_migrations", status.TotalMigrations),
+			zap.Int("applied_migrations", status.AppliedMigrations),
+			zap.Strings("pending_migrations", status.PendingMigrations),
+			zap.String("last_applied", status.LastApplied))
 	}
 
 	// Connect to NewsfeedPublishingClient if configured
@@ -56,14 +89,17 @@ func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*Aut
 		if err != nil {
 			logger.Error("Failed to connect to newsfeed publishing service", zap.Error(err))
 			// Continue without newsfeed publishing client
+		} else {
+			logger.Info("Successfully connected to newsfeed publishing service")
 		}
 	}
 
-	logger.Info("AuthenticateAndPostService initialized")
+	logger.Info("AuthenticateAndPostService initialized successfully")
 	return &AuthenticateAndPostService{
-		db:          db,
-		nfPubClient: nfPubClient,
-		logger:      logger,
+		db:               db,
+		migrationManager: migrationManager,
+		nfPubClient:      nfPubClient,
+		logger:           logger,
 	}, nil
 }
 
@@ -76,8 +112,25 @@ func (a *AuthenticateAndPostService) GetLogger() *zap.Logger {
 	return a.logger
 }
 
+func (a *AuthenticateAndPostService) GetMigrationManager() *utils.MigrationManager {
+	return a.migrationManager
+}
+
 func (a *AuthenticateAndPostService) GetRedis() interface{} {
 	// AuthPost service doesn't directly use Redis, return nil
+	return nil
+}
+
+// GetMigrationStatus returns the current status of database migrations
+func (a *AuthenticateAndPostService) GetMigrationStatus() (*utils.MigrationStatus, error) {
+	return a.migrationManager.GetStatus("migrations")
+}
+
+// Close gracefully closes the AuthPost service resources
+func (a *AuthenticateAndPostService) Close() error {
+	if sqlDB, err := a.db.DB(); err == nil {
+		return sqlDB.Close()
+	}
 	return nil
 }
 

@@ -90,7 +90,7 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 		}
 
 		// Save current sessionID and expiration time in Redis
-		err = svc.RedisClient.Set(svc.RedisClient.Context(), sessionId, authentication.GetUserId(), expirationTime).Err()
+		err = svc.RedisPool.Client.Set(svc.RedisPool.Client.Context(), sessionId, authentication.GetUserId(), expirationTime).Err()
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, types.ErrorResponse{
 				Error:   "session_error",
@@ -376,7 +376,7 @@ func (svc *WebService) checkSessionAuthentication(ctx *gin.Context) (sessionId s
 	}
 
 	// Validate session in Redis
-	val, err := svc.RedisClient.Get(svc.RedisClient.Context(), sessionId).Result()
+	val, err := svc.RedisPool.Client.Get(svc.RedisPool.Client.Context(), sessionId).Result()
 	if err != nil {
 		svc.Logger.Debug("Session not found in Redis or expired",
 			zap.String("session_id", sessionId),

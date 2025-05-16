@@ -45,7 +45,7 @@ func (svc *WebService) RefreshSession() gin.HandlerFunc {
 			}
 
 			// Refresh session in Redis
-			_ = svc.RedisClient.Expire(svc.RedisClient.Context(), sessionId, expirationTime).Err()
+			_ = svc.RedisPool.Client.Expire(svc.RedisPool.Client.Context(), sessionId, expirationTime).Err()
 
 			// Get cookie settings
 			cookieName := "session_id" // Default

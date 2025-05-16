@@ -12,6 +12,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/authpost"
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
@@ -56,7 +57,8 @@ type NewsfeedPublishingService struct {
 	pb_nfp.UnimplementedNewsfeedPublishingServer
 	kafkaWriter               *kafka.Writer
 	kafkaReader               *kafka.Reader
-	redisClient               *redis.Client
+	kafkaManager              *utils.KafkaManager
+	redisPool                 *utils.RedisPool
 	memoryStore               *MemoryStore
 	authenticateAndPostClient pb_aap.AuthenticateAndPostClient
 	logger                    *zap.Logger
@@ -75,7 +77,7 @@ func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*Newsf
 		return nil, err
 	}
 
-	logger.Info("Initializing Newsfeed Publishing Service")
+	logger.Info("Initializing Newsfeed Publishing Service with enhanced utilities")
 
 	// Initialize service with default values
 	svc := &NewsfeedPublishingService{
@@ -86,65 +88,64 @@ func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*Newsf
 		memoryStore:    NewMemoryStore(),
 	}
 
-	// Try to connect to Kafka, but make it optional
-	brokers := cfg.Kafka.Brokers
-	logger.Info("Trying to connect to Kafka", zap.Strings("brokers", brokers))
-
-	kafkaWriter := kafka.NewWriter(kafka.WriterConfig{
-		Brokers: brokers,
-		Topic:   cfg.Kafka.Topic,
-		Logger:  log.New(os.Stdout, "kafka writer: ", 0),
-		Async:   true,
-	})
-
-	// Check if Kafka is available by sending a test message with a short timeout
-	testCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	testErr := kafkaWriter.WriteMessages(testCtx, kafka.Message{
-		Key:   []byte("startup_test"),
-		Value: []byte("test_value"),
-	})
-
-	if testErr != nil {
-		logger.Warn("Kafka connection failed, will operate in fallback mode", zap.Error(testErr))
-		svc.kafkaWriter = &kafka.Writer{} // Use empty writer as fallback
-		svc.kafkaReader = &kafka.Reader{} // Use empty reader as fallback
+	// Initialize enhanced Redis connection pool
+	logger.Info("Setting up enhanced Redis connection pool", zap.String("addr", cfg.Redis.Addr))
+	redisPool, redisErr := utils.NewRedisPool(&cfg.Redis, logger)
+	if redisErr != nil {
+		logger.Warn("Enhanced Redis pool setup failed, will operate with in-memory storage", zap.Error(redisErr))
+		svc.redisPool = nil
+		svc.redisAvailable = false
 	} else {
-		logger.Info("Successfully connected to Kafka")
-		svc.kafkaWriter = kafkaWriter
-
-		// Now set up reader
-		kafkaReader := kafka.NewReader(kafka.ReaderConfig{
-			Brokers: brokers,
-			Topic:   cfg.Kafka.Topic,
-			Logger:  log.New(os.Stdout, "kafka reader: ", 0),
-			GroupID: "newsfeed_consumer_group",
-		})
-
-		svc.kafkaReader = kafkaReader
-		svc.kafkaAvailable = true
+		logger.Info("Successfully initialized enhanced Redis connection pool")
+		svc.redisPool = redisPool
+		svc.redisAvailable = true
 	}
 
-	// Try to connect to Redis, but make it optional
-	logger.Info("Trying to connect to Redis", zap.String("addr", cfg.Redis.Addr))
-	redisCtx, redisCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer redisCancel()
+	// Initialize Kafka manager and ensure topics exist
+	logger.Info("Setting up Kafka manager", zap.Strings("brokers", cfg.Kafka.Brokers))
+	kafkaManager := utils.NewKafkaManager(&cfg.Kafka, logger)
+	svc.kafkaManager = kafkaManager
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr:     cfg.Redis.Addr,
-		Password: cfg.Redis.Password,
-	})
+	// Check Kafka connectivity and initialize topics
+	kafkaCtx, kafkaCancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer kafkaCancel()
 
-	// Verify Redis connection
-	_, redisErr := redisClient.Ping(redisCtx).Result()
-	if redisErr != nil {
-		logger.Warn("Redis connection failed, will operate with in-memory storage", zap.Error(redisErr))
-		svc.redisClient = nil
+	if err := kafkaManager.HealthCheck(kafkaCtx); err != nil {
+		logger.Warn("Kafka health check failed, will operate in fallback mode", zap.Error(err))
+		svc.kafkaAvailable = false
 	} else {
-		logger.Info("Successfully connected to Redis")
-		svc.redisClient = redisClient
-		svc.redisAvailable = true
+		logger.Info("Kafka connectivity verified, initializing topics")
+
+		// Auto-create required topics
+		if err := kafkaManager.InitializeWanderSphereTopics(kafkaCtx, cfg.Kafka.Topic); err != nil {
+			logger.Warn("Failed to initialize Kafka topics, but continuing", zap.Error(err))
+		}
+
+		// Set up Kafka writer with enhanced configuration
+		kafkaWriter := kafka.NewWriter(kafka.WriterConfig{
+			Brokers:      cfg.Kafka.Brokers,
+			Topic:        cfg.Kafka.Topic,
+			Logger:       log.New(os.Stdout, "kafka writer: ", 0),
+			Async:        true,
+			Balancer:     &kafka.LeastBytes{}, // Better load balancing
+			BatchSize:    100,                 // Batch writes for performance
+			BatchTimeout: 10 * time.Millisecond,
+		})
+
+		// Set up Kafka reader with enhanced configuration
+		kafkaReader := kafka.NewReader(kafka.ReaderConfig{
+			Brokers:  cfg.Kafka.Brokers,
+			Topic:    cfg.Kafka.Topic,
+			Logger:   log.New(os.Stdout, "kafka reader: ", 0),
+			GroupID:  "newsfeed_consumer_group",
+			MinBytes: 10e3, // 10KB
+			MaxBytes: 10e6, // 10MB
+		})
+
+		svc.kafkaWriter = kafkaWriter
+		svc.kafkaReader = kafkaReader
+		svc.kafkaAvailable = true
+		logger.Info("Kafka setup completed successfully")
 	}
 
 	// Connect to aap service - this is required
@@ -168,9 +169,10 @@ func NewNewsfeedPublishingService(cfg *configs.NewsfeedPublishingConfig) (*Newsf
 
 	svc.authenticateAndPostClient = aapClient
 
-	logger.Info("Service initialized in fallback mode",
+	logger.Info("Service initialized with enhanced features",
 		zap.Bool("kafka_available", svc.kafkaAvailable),
-		zap.Bool("redis_available", svc.redisAvailable))
+		zap.Bool("redis_available", svc.redisAvailable),
+		zap.Bool("enhanced_redis_pool", svc.redisPool != nil))
 
 	return svc, nil
 }
@@ -181,7 +183,14 @@ func (svc *NewsfeedPublishingService) GetLogger() *zap.Logger {
 }
 
 func (svc *NewsfeedPublishingService) GetRedis() *redis.Client {
-	return svc.redisClient
+	if svc.redisPool != nil {
+		return svc.redisPool.Client
+	}
+	return nil
+}
+
+func (svc *NewsfeedPublishingService) GetRedisPool() *utils.RedisPool {
+	return svc.redisPool
 }
 
 func (svc *NewsfeedPublishingService) IsKafkaAvailable() bool {
@@ -368,9 +377,9 @@ func (svc *NewsfeedPublishingService) Shutdown() {
 		}
 	}
 
-	if svc.redisAvailable && svc.redisClient != nil {
-		if err := svc.redisClient.Close(); err != nil {
-			svc.logger.Error("Error closing Redis client", zap.Error(err))
+	if svc.redisAvailable && svc.redisPool != nil {
+		if err := svc.redisPool.Close(); err != nil {
+			svc.logger.Error("Error closing Redis pool", zap.Error(err))
 		}
 	}
 }
@@ -457,7 +466,7 @@ func (svc *NewsfeedPublishingService) getFollowers(userID int64) ([]string, erro
 	ctx := context.Background()
 
 	// Check if followers are cached
-	exists, err := svc.redisClient.Exists(ctx, followersKey).Result()
+	exists, err := svc.redisPool.Client.Exists(ctx, followersKey).Result()
 	if err != nil {
 		svc.logger.Error("Redis error checking followers cache",
 			zap.Int64("user_id", userID),
@@ -480,7 +489,7 @@ func (svc *NewsfeedPublishingService) getFollowers(userID int64) ([]string, erro
 	var redisErr error
 
 	for attempt := 1; attempt <= MaxRetryAttempts; attempt++ {
-		followersIds, redisErr = svc.redisClient.LRange(ctx, followersKey, 0, -1).Result()
+		followersIds, redisErr = svc.redisPool.Client.LRange(ctx, followersKey, 0, -1).Result()
 
 		if redisErr == nil || errors.Is(redisErr, redis.Nil) {
 			// Success or empty list
@@ -530,7 +539,7 @@ func (svc *NewsfeedPublishingService) updateFollowersCache(ctx context.Context, 
 
 	// If no followers, set an empty list with expiration
 	if len(followersIds) == 0 {
-		if err := svc.redisClient.Set(ctx, followersKey, "[]", FollowerCacheExpirationTime).Err(); err != nil {
+		if err := svc.redisPool.Client.Set(ctx, followersKey, "[]", FollowerCacheExpirationTime).Err(); err != nil {
 			svc.logger.Error("Failed to cache empty followers list",
 				zap.Int64("user_id", userID),
 				zap.Error(err))
@@ -540,7 +549,7 @@ func (svc *NewsfeedPublishingService) updateFollowersCache(ctx context.Context, 
 	}
 
 	// Cache the followers with a reasonable expiration time
-	pipe := svc.redisClient.Pipeline()
+	pipe := svc.redisPool.Client.Pipeline()
 	for _, id := range followersIds {
 		pipe.RPush(ctx, followersKey, id)
 	}
@@ -667,7 +676,7 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeeds(followerIds []strin
 	errCount := 0
 
 	// Use pipelining for better performance with large follower counts
-	pipe := svc.redisClient.Pipeline()
+	pipe := svc.redisPool.Client.Pipeline()
 
 	for _, id := range followerIds {
 		newsfeedKey := "newsfeed:" + id
@@ -714,7 +723,7 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeedsIndividually(ctx con
 		// Try with retry
 		var redisErr error
 		for attempt := 1; attempt <= MaxRetryAttempts; attempt++ {
-			_, redisErr = svc.redisClient.RPush(ctx, newsfeedKey, postIDStr).Result()
+			_, redisErr = svc.redisPool.Client.RPush(ctx, newsfeedKey, postIDStr).Result()
 
 			if redisErr == nil {
 				break

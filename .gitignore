@@ -29,3 +29,21 @@ personal/
 
 # Ignore compiled binaries
 *.linux
+
+# Build output directories
+bin/
+build/
+
+# Test artifacts
+tests/cookies.txt
+tests/test_results.json
+tests/coverage/
+
+# Temporary files
+*.tmp
+tmp/
+temp/
+
+# IDE files
+.vscode/
+.idea/

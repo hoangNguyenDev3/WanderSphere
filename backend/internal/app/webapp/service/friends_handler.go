@@ -5,10 +5,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/hoangNguyenDev3/WanderSphere/backend/docs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
-
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	"go.uber.org/zap"
 )
 
 // FollowUser godoc
@@ -38,6 +37,10 @@ func (svc *WebService) FollowUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
 		return
 	}
+
+	svc.Logger.Info("Web FollowUser request",
+		zap.Int("user_id", userId),
+		zap.Int("following_id", followingId))
 
 	// Call FollowUser service
 	resp, err := svc.AuthenticateAndPostClient.FollowUser(ctx, &pb_aap.FollowUserRequest{
