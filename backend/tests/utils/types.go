@@ -105,11 +105,11 @@ type UserFollowingResponse struct {
 }
 
 type UserPostsResponse struct {
-	PostsIDs []int `json:"posts_ids"`
+	PostsIds []int64 `json:"posts_ids"`
 }
 
 type NewsfeedResponse struct {
-	PostsIDs []int `json:"posts_ids"`
+	PostsIds []int64 `json:"posts_ids"`
 }
 
 type GetS3PresignedUrlResponse struct {

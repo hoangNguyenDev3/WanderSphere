@@ -124,7 +124,7 @@ func TestCompleteUserJourney(t *testing.T) {
 		if userPostsResp.IsSuccess() {
 			var postsResp utils.UserPostsResponse
 			if err := userPostsResp.ParseJSON(&postsResp); err == nil {
-				t.Logf("✓ Step 7: User has %d posts", len(postsResp.PostsIDs))
+				t.Logf("✓ Step 7: User has %d posts", len(postsResp.PostsIds))
 			}
 		} else {
 			t.Logf("⚠ Step 7: Failed to get user posts (may be expected): Status %d", userPostsResp.StatusCode)
@@ -139,7 +139,7 @@ func TestCompleteUserJourney(t *testing.T) {
 		if newsfeedResp.IsSuccess() {
 			var newsfeed utils.NewsfeedResponse
 			if err := newsfeedResp.ParseJSON(&newsfeed); err == nil {
-				t.Logf("✓ Step 8: Initial newsfeed has %d posts", len(newsfeed.PostsIDs))
+				t.Logf("✓ Step 8: Initial newsfeed has %d posts", len(newsfeed.PostsIds))
 			}
 		} else {
 			t.Logf("⚠ Step 8: Failed to get newsfeed (may be expected): Status %d", newsfeedResp.StatusCode)
@@ -282,7 +282,7 @@ func TestSocialInteractionJourney(t *testing.T) {
 			if err == nil && newsfeedResp.IsSuccess() {
 				var newsfeed utils.NewsfeedResponse
 				if newsfeedResp.ParseJSON(&newsfeed) == nil {
-					t.Logf("✓ %s's newsfeed contains %d posts", names[i], len(newsfeed.PostsIDs))
+					t.Logf("✓ %s's newsfeed contains %d posts", names[i], len(newsfeed.PostsIds))
 				}
 			} else {
 				t.Logf("⚠ %s's newsfeed failed", names[i])
@@ -352,7 +352,7 @@ func TestContentLifecycleIntegration(t *testing.T) {
 		if err == nil && consumerNewsfeedResp.IsSuccess() {
 			var newsfeed utils.NewsfeedResponse
 			if consumerNewsfeedResp.ParseJSON(&newsfeed) == nil {
-				t.Logf("✓ Consumer's newsfeed has %d posts", len(newsfeed.PostsIDs))
+				t.Logf("✓ Consumer's newsfeed has %d posts", len(newsfeed.PostsIds))
 			}
 		} else {
 			t.Logf("⚠ Consumer's newsfeed check failed")
@@ -450,7 +450,7 @@ func TestContentLifecycleIntegration(t *testing.T) {
 		if err == nil && creatorPostsResp.IsSuccess() {
 			var creatorPosts utils.UserPostsResponse
 			if creatorPostsResp.ParseJSON(&creatorPosts) == nil {
-				t.Logf("✓ Creator has %d total posts", len(creatorPosts.PostsIDs))
+				t.Logf("✓ Creator has %d total posts", len(creatorPosts.PostsIds))
 			}
 		}
 

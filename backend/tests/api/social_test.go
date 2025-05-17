@@ -406,9 +406,9 @@ func TestGetUserPosts(t *testing.T) {
 				t.Fatalf("Failed to parse user posts response: %v", err)
 			}
 
-			t.Logf("User posts retrieved: %d posts", len(postsResp.PostsIDs))
-			if len(postsResp.PostsIDs) > 0 {
-				t.Logf("Post IDs: %v", postsResp.PostsIDs)
+			t.Logf("User posts retrieved: %d posts", len(postsResp.PostsIds))
+			if len(postsResp.PostsIds) > 0 {
+				t.Logf("Post IDs: %v", postsResp.PostsIds)
 			}
 		} else if resp.StatusCode == 400 || resp.StatusCode == 404 {
 			t.Logf("Get user posts failed (expected for test): Status %d", resp.StatusCode)
@@ -460,8 +460,8 @@ func TestGetUserPosts(t *testing.T) {
 		if resp.IsSuccess() {
 			var postsResp utils.UserPostsResponse
 			if err := resp.ParseJSON(&postsResp); err == nil {
-				t.Logf("User now has %d posts", len(postsResp.PostsIDs))
-				if len(postsResp.PostsIDs) >= 3 {
+				t.Logf("User now has %d posts", len(postsResp.PostsIds))
+				if len(postsResp.PostsIds) >= 3 {
 					t.Logf("✓ All test posts appear to be created and retrieved")
 				}
 			}
@@ -564,7 +564,7 @@ func TestSocialInteractions(t *testing.T) {
 			if err == nil && postsResp.IsSuccess() {
 				var posts utils.UserPostsResponse
 				if postsResp.ParseJSON(&posts) == nil {
-					t.Logf("User %d has %d posts", i+1, len(posts.PostsIDs))
+					t.Logf("User %d has %d posts", i+1, len(posts.PostsIds))
 				}
 			}
 		}
