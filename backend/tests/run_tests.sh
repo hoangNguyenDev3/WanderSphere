@@ -196,40 +196,65 @@ log_info "Running database migrations to ensure proper schema..."
 # Wait a moment for migrations to complete
 sleep 5
 
-# Run Go tests with better error handling
+# Track test results
+TEST_RESULTS=()
+TESTS_PASSED=0
+TESTS_FAILED=0
+
+# Run Go tests with proper error tracking
 log_info "Running authentication tests..."
 if go test -v ./api -run TestUser -timeout=$TEST_TIMEOUT; then
     log_success "Authentication tests passed"
+    TEST_RESULTS+=("✅ Authentication tests: PASSED")
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    log_warning "Some authentication tests failed (may be expected in test environment)"
+    log_error "Authentication tests failed"
+    TEST_RESULTS+=("❌ Authentication tests: FAILED")
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 log_info "Running posts management tests..."
 if go test -v ./api -run TestCreate -timeout=$TEST_TIMEOUT; then
     log_success "Posts management tests passed"
+    TEST_RESULTS+=("✅ Posts management tests: PASSED")
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    log_warning "Some posts management tests failed (may be expected in test environment)"
+    log_error "Posts management tests failed"
+    TEST_RESULTS+=("❌ Posts management tests: FAILED")
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 log_info "Running social features tests..."
 if go test -v ./api -run TestFollow -timeout=$TEST_TIMEOUT; then
     log_success "Social features tests passed"
+    TEST_RESULTS+=("✅ Social features tests: PASSED")
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    log_warning "Some social features tests failed (may be expected in test environment)"
+    log_error "Social features tests failed"
+    TEST_RESULTS+=("❌ Social features tests: FAILED")
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 log_info "Running newsfeed tests..."
 if go test -v ./api -run TestNewsfeed -timeout=$TEST_TIMEOUT; then
     log_success "Newsfeed tests passed"
+    TEST_RESULTS+=("✅ Newsfeed tests: PASSED")
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    log_warning "Some newsfeed tests failed (may be expected in test environment)"
+    log_error "Newsfeed tests failed"
+    TEST_RESULTS+=("❌ Newsfeed tests: FAILED")
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 log_info "Running integration tests..."
 if go test -v ./api -run TestComplete -timeout=$TEST_TIMEOUT; then
     log_success "Integration tests passed"
+    TEST_RESULTS+=("✅ Integration tests: PASSED")
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 else
-    log_warning "Some integration tests failed (may be expected in test environment)"
+    log_error "Integration tests failed"
+    TEST_RESULTS+=("❌ Integration tests: FAILED")
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 fi
 
 echo ""
@@ -242,14 +267,28 @@ echo "------------------------------"
 log_info "Generating comprehensive test report..."
 go test -v ./api/... -json -timeout=$TEST_TIMEOUT > test_results.json 2>/dev/null || true
 
+# Determine overall test status
+if [ $TESTS_FAILED -eq 0 ]; then
+    API_TEST_STATUS="✅ All API tests passed ($TESTS_PASSED/$((TESTS_PASSED + TESTS_FAILED)))"
+    OVERALL_STATUS="🎉 ALL TESTS PASSED! WanderSphere API is fully functional!"
+else
+    API_TEST_STATUS="❌ Some API tests failed ($TESTS_PASSED/$((TESTS_PASSED + TESTS_FAILED)) passed)"
+    OVERALL_STATUS="⚠️ Some tests failed - system needs attention"
+fi
+
 log_success "API testing completed!"
+echo ""
+echo "📊 Detailed Test Results:"
+for result in "${TEST_RESULTS[@]}"; do
+    echo "  $result"
+done
 echo ""
 echo "📊 Test Summary:"
 echo "- Infrastructure: ✅ Core services running"
 echo "- Connectivity: ✅ Basic endpoints responding"
-echo "- API Tests: ⚠️  Tests executed (some failures expected in test environment)"
+echo "- API Tests: $API_TEST_STATUS"
 echo ""
-echo "🎉 WanderSphere API testing framework validated!"
+echo "$OVERALL_STATUS"
 
 # Optional: Keep services running for manual testing
 if [[ "${KEEP_RUNNING:-false}" == "true" ]]; then
