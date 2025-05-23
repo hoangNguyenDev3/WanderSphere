@@ -1,0 +1,163 @@
+version: '3'
+services:
+
+  web:
+    build:
+      context: .
+      dockerfile: cmd/webapp/Dockerfile
+      target: test_env
+    image: webapp
+    depends_on:
+      - newsfeed
+      - aap
+    networks:
+      - intranet
+      - default
+    hostname: web
+    ports:
+      - 19003:19003
+      - 19103:19103
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    profiles: [ "web", "all" ]
+
+  aap:
+    build:
+      context: .
+      dockerfile: cmd/authpost/Dockerfile
+      target: test_env
+    image: aapsvc
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - intranet
+    hostname: aap
+    ports:
+      - 19001:19001
+      - 19101:19101
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    profiles: [ "aap", "all" ]
+
+  newsfeed:
+    build:
+      context: .
+      dockerfile: cmd/newsfeed/Dockerfile
+      target: test_env
+    image: nfsvc
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - intranet
+    hostname: nf
+    ports:
+      - 19002:19002
+      - 19102:19102
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    profiles: [ "newsfeed", "all" ]
+
+  nfp:
+    build:
+      context: .
+      dockerfile: cmd/newsfeed_publishing/Dockerfile
+      target: test_env
+    image: nfpsvc
+    depends_on:
+      - aap
+      - kafka
+      - redis
+    networks:
+      - intranet
+    hostname: nfp
+    ports:
+      - 19004:19004
+      - 19104:19104
+    volumes:
+      - ./config.yaml:/app/config.yaml
+    profiles: [ "nfp", "all" ]
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - intranet
+    hostname: kafka
+    ports:
+      - 9092:9092
+    healthcheck:
+      test: kafka-topics --bootstrap-server kafka:9092 --list || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    profiles: [ "infra", "all" ]
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - intranet
+    hostname: zookeeper
+    ports:
+      - 2181:2181
+    profiles: [ "infra", "all" ]
+
+  postgres:
+    image: postgres
+    volumes:
+      - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    environment:
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: wander_sphere
+      POSTGRES_USER: postgres
+    networks:
+      - intranet
+    hostname: postgres
+    ports:
+      - 5434:5432
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      timeout: 20s
+      retries: 10
+    profiles: [ "infra", "all" ]
+
+  redis:
+    image: redis:latest
+    networks:
+      - intranet
+    hostname: redis
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+    profiles: [ "infra", "all" ]
+
+networks:
+  intranet: {}
+  default: {}
+
+volumes:
+  postgres_data:

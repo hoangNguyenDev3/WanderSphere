@@ -1,0 +1,796 @@
+basePath: /api/v1
+definitions:
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CommentResponse:
+    properties:
+      comment_id:
+        type: integer
+      content_text:
+        type: string
+      post_id:
+        type: integer
+      user_id:
+        type: integer
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CreatePostCommentRequest:
+    properties:
+      content_text:
+        type: string
+    required:
+    - content_text
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CreatePostRequest:
+    properties:
+      content_image_path:
+        items:
+          type: string
+        type: array
+      content_text:
+        type: string
+      visible:
+        type: boolean
+    required:
+    - content_text
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CreateUserRequest:
+    properties:
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      user_name:
+        type: string
+    required:
+    - date_of_birth
+    - email
+    - password
+    - user_name
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.EditPostRequest:
+    properties:
+      content_image_path:
+        items:
+          type: string
+        type: array
+      content_text:
+        type: string
+      visible:
+        type: boolean
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.EditUserRequest:
+    properties:
+      cover_picture:
+        type: string
+      date_of_birth:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      profile_picture:
+        type: string
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.GetS3PresignedUrlRequest:
+    properties:
+      file_name:
+        type: string
+      file_type:
+        type: string
+    required:
+    - file_name
+    - file_type
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.GetS3PresignedUrlResponse:
+    properties:
+      expiration_time:
+        type: string
+      url:
+        type: string
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.LoginRequest:
+    properties:
+      password:
+        type: string
+      user_name:
+        type: string
+    required:
+    - password
+    - user_name
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.LoginResponse:
+    properties:
+      message:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserDetailInfo'
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse:
+    properties:
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.NewsfeedResponse:
+    properties:
+      posts_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.PostDetailInfoResponse:
+    properties:
+      comments:
+        items:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CommentResponse'
+        type: array
+      content_image_path:
+        items:
+          type: string
+        type: array
+      content_text:
+        type: string
+      created_at:
+        type: string
+      post_id:
+        type: integer
+      user_id:
+        type: integer
+      users_liked:
+        items:
+          type: integer
+        type: array
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserDetailInfo:
+    properties:
+      cover_picture:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      profile_picture:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserDetailInfoResponse:
+    properties:
+      cover_picture:
+        type: string
+      date_of_birth:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      profile_picture:
+        type: string
+      user_id:
+        type: integer
+      user_name:
+        type: string
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserFollowerResponse:
+    properties:
+      followers_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserFollowingResponse:
+    properties:
+      followings_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+  github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserPostsResponse:
+    properties:
+      posts_ids:
+        items:
+          type: integer
+        type: array
+    type: object
+host: localhost:19003
+info:
+  contact:
+    email: support@wandersphere.com
+    name: API Support
+  description: API Server for WanderSphere Application
+  title: WanderSphere API
+  version: "1.0"
+paths:
+  /friends/{user_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Unfollow another user
+      parameters:
+      - description: User ID to unfollow
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User unfollowed successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error or user not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Unfollow user
+      tags:
+      - friends
+    post:
+      consumes:
+      - application/json
+      description: Follow another user
+      parameters:
+      - description: User ID to follow
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User followed successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error or user not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Follow user
+      tags:
+      - friends
+  /friends/{user_id}/followers:
+    get:
+      consumes:
+      - application/json
+      description: Get the followers of a user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's followers
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserFollowerResponse'
+        "400":
+          description: Validation error or user not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      summary: Get user followers
+      tags:
+      - friends
+  /friends/{user_id}/followings:
+    get:
+      consumes:
+      - application/json
+      description: Get the users followed by a user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's followings
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserFollowingResponse'
+        "400":
+          description: Validation error or user not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      summary: Get user followings
+      tags:
+      - friends
+  /friends/{user_id}/posts:
+    get:
+      consumes:
+      - application/json
+      description: Get all posts of a user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's posts
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserPostsResponse'
+        "400":
+          description: Validation error or user not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      summary: Get user posts
+      tags:
+      - friends
+  /newsfeed:
+    get:
+      consumes:
+      - application/json
+      description: Get the current user's newsfeed
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User's newsfeed
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.NewsfeedResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get user's newsfeed
+      tags:
+      - newsfeed
+  /posts:
+    post:
+      consumes:
+      - application/json
+      description: Create a new post with text and optional images
+      parameters:
+      - description: Post creation parameters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CreatePostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post created successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a new post
+      tags:
+      - posts
+  /posts/{post_id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an existing post
+      parameters:
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post deleted successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error or post not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Delete post
+      tags:
+      - posts
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a post
+      parameters:
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post details
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.PostDetailInfoResponse'
+        "400":
+          description: Invalid post ID or post not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      summary: Get post details
+      tags:
+      - posts
+    post:
+      consumes:
+      - application/json
+      description: Add a comment to an existing post
+      parameters:
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      - description: Comment content
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CreatePostCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated post with new comment
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.PostDetailInfoResponse'
+        "400":
+          description: Validation error or post not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Comment on a post
+      tags:
+      - posts
+    put:
+      consumes:
+      - application/json
+      description: Edit an existing post
+      parameters:
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      - description: Post edit parameters
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.EditPostRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post updated successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error or post not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Edit post
+      tags:
+      - posts
+  /posts/{post_id}/likes:
+    post:
+      consumes:
+      - application/json
+      description: Like an existing post
+      parameters:
+      - description: Post ID
+        in: path
+        name: post_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Post liked successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error or post not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Like a post
+      tags:
+      - posts
+  /posts/url:
+    get:
+      consumes:
+      - application/json
+      description: Get a presigned URL to directly upload a file to S3
+      parameters:
+      - description: File details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.GetS3PresignedUrlRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Presigned URL
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.GetS3PresignedUrlResponse'
+        "400":
+          description: Validation error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a presigned S3 URL for file upload
+      tags:
+      - posts
+  /users/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Get detailed information about a user
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User details
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.UserDetailInfoResponse'
+        "400":
+          description: Invalid user ID or user not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      summary: Get user details
+      tags:
+      - users
+  /users/edit:
+    post:
+      consumes:
+      - application/json
+      description: Update user profile information
+      parameters:
+      - description: User information to update
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.EditUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User updated successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error or user not found
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Edit user profile
+      tags:
+      - users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Login with username and password
+      parameters:
+      - description: Login credentials
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Login successful
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.LoginResponse'
+        "400":
+          description: Validation error or authentication failed
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.ErrorResponse'
+      summary: Authenticate a user
+      tags:
+      - users
+  /users/signup:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User registration information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "400":
+          description: Validation error or user already exists
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/github_com_hoangNguyenDev3_WanderSphere_backend_internal_pkg_types.MessageResponse'
+      summary: Register a new user
+      tags:
+      - users
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    in: cookie
+    name: session_id
+    type: apiKey
+swagger: "2.0"

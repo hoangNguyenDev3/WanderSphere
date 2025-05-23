@@ -8,6 +8,11 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+const (
+	patternAlphaNumeric            = "^[a-zA-Z0-9_-]+$"
+	patternAlphaNumericSpecialChar = `^[a-zA-Z0-9~!@#$%^&*()-_=+{}\|;:'",<.>/?]+$`
+)
+
 type LoginRequest struct {
 	UserName string `json:"username" validate:"required,username"`
 	Password string `json:"password" validate:"required,password"`
@@ -30,6 +35,20 @@ type EditUserRequest struct {
 	Email     string `json:"email" validate:"omitempty,email"`
 }
 
+type CreatePostRequest struct {
+	ContentText      string   `json:"content_text" validate:"required"`
+	ContentImagePath []string `json:"content_image_path" validate:"omitempty,dive,url"`
+}
+
+type EditPostRequest struct {
+	ContentText      string   `json:"content_text" validate:"omitempty"`
+	ContentImagePath []string `json:"content_image_path" validate:"omitempty,dive,url"`
+}
+
+type CommentPostRequest struct {
+	Content string `json:"content"`
+}
+
 func NewValidator() *validator.Validate {
 	validate := validator.New()
 	validate.RegisterValidation("dob", validateDOB)
@@ -42,7 +61,10 @@ func NewValidator() *validator.Validate {
 func validateDOB(fl validator.FieldLevel) bool {
 	dateStr := fl.Field().String()
 
+	// Define the expected date format
 	dateFormat := time.DateOnly
+
+	// Parse the date string into a time.Time value
 	_, err := time.Parse(dateFormat, dateStr)
 
 	return err == nil
@@ -53,8 +75,7 @@ func validatePassword(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	pattern := `^[a-zA-Z0-9~!@#$%^&*()-_=+{}\|;:'",<.>/?]+$`
-	alphaRegex, err := regexp.Compile(pattern)
+	alphaRegex, err := regexp.Compile(patternAlphaNumericSpecialChar)
 	if err != nil {
 		return false
 	}
@@ -66,8 +87,7 @@ func validateUsername(fl validator.FieldLevel) bool {
 		return false
 	}
 
-	pattern := "^[a-zA-Z0-9_-]+$"
-	alphaNumRegex, err := regexp.Compile(pattern)
+	alphaNumRegex, err := regexp.Compile(patternAlphaNumeric)
 	if err != nil {
 		return false
 	}

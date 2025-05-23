@@ -1,36 +1,56 @@
-# Shared PostgreSQL configuration
+# Common configurations for aap and nf
 postgres: &POSTGRES
-  dsn: "postgres://admin:admin@localhost:5432/wander_sphere?sslmode=disable"
-  max_pool_size: 10
-  min_pool_size: 1
-  search_path: "public"
-
-# Shared Redis configuration
+  dsn: "postgres:123456@tcp(postgres:5432)/wander_sphere?sslmode=disable"
+  defaultStringSize: 256
+  disableDatetimePrecision: true
+  dontSupportRenameIndex: true
+  skipInitializeWithVersion: false
 redis: &REDIS
-  addr: "localhost:6379"
-  password: "admin"
+  addr: redis:6379
 
-# Authentication & Post service (gRPC)
+kafka: &KAFKA
+  topic: "wander_sphere"
+  brokers: ["kafka:9092"]
+
+logger: &LOGGER
+  level: "debug"
+
+# Configuration for aap service connection
 authenticate_and_post_config: &AAP
   port: 19001
+  logger: *LOGGER
   postgres: *POSTGRES
   redis: *REDIS
+  newsfeed_publishing:
+    hosts: ["nfp:19004"]
 
-# Newsfeed service (gRPC)
+# Configuration for nf service connection
 newsfeed_config: &NF
   port: 19002
+  logger: *LOGGER
   postgres: *POSTGRES
   redis: *REDIS
-
-# Web App (BFF) service
-web_config:
-  port: 19003
-  api_version:
-    - "v1"
+  kafka: *KAFKA
   authenticate_and_post:
-    hosts:
-      - "localhost:19001"
+    hosts: ["aap:19001"]
+
+# Configuration for nfp service connection
+newsfeed_publishing_config: &NFP
+  port: 19004
+  logger: *LOGGER
+  redis: *REDIS
+  kafka: *KAFKA
+  authenticate_and_post:
+    hosts: ["aap:19001"]
+
+# Configurations for web app
+web_config:
+  # Connection configs
+  port: 19003
+  logger: *LOGGER
+  api_version: ["v1"]
+  authenticate_and_post:
+    hosts: ["aap:19001"]
   newsfeed:
-    hosts:
-      - "localhost:19002"
+    hosts: ["nf:19002"]
   redis: *REDIS

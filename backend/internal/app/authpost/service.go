@@ -1,218 +1,162 @@
 package authpost
 
 import (
-	"context"
 	"errors"
+	"path/filepath"
+	"time"
 
-	"github.com/hoangNguyenDev3/WanderSphere/configs"
-	"github.com/hoangNguyenDev3/WanderSphere/internal/auth"
-	"github.com/hoangNguyenDev3/WanderSphere/internal/models"
-	authpost "github.com/hoangNguyenDev3/WanderSphere/pkg/types/proto/pb/authpost"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
+	client_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/newsfeed_publishing"
+	pb "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-type AuthenticationAndPostService struct {
-	authpost.UnimplementedAuthenticationAndPostServer
-	db *gorm.DB
+// AuthenticateAndPostService implements the AuthenticateAndPost service
+type AuthenticateAndPostService struct {
+	pb.UnimplementedAuthenticateAndPostServer
+	db               *gorm.DB
+	migrationManager *utils.MigrationManager
+	nfPubClient      client_nfp.Client
+	logger           *zap.Logger
 }
 
-func (s *AuthenticationAndPostService) CreateUser(ctx context.Context, info *authpost.UserDetailInfo) (*authpost.UserResult, error) {
-	existed, _ := s.checkUserName(info.GetUserName())
-	if existed {
-		return nil, errors.New("user already exist")
-	}
-
-	salt, err := auth.GenerateRandomSalt()
+func NewAuthenticateAndPostService(cfg *configs.AuthenticateAndPostConfig) (*AuthenticateAndPostService, error) {
+	// Create logger first for better error reporting
+	logger, err := utils.NewLogger(&cfg.Logger)
 	if err != nil {
-		return nil, err
+		// Fall back to production logger if there's an error
+		logger, _ = zap.NewProduction()
 	}
 
-	hashed_password, err := auth.HashPassword(info.GetUserPassword(), salt)
-	if err != nil {
-		return nil, err
-	}
+	logger.Info("Initializing AuthenticateAndPostService with database migrations")
 
-	err = s.db.Exec(
-		"insert into \"user\" (id, hashed_password, salt, first_name, last_name, dob, email, user_name) values (default, ?, ?, ?, ?, to_timestamp(?), ?, ?)",
-		hashed_password,
-		salt,
-		info.GetFirstName(),
-		info.GetLastName(),
-		info.GetDob(),
-		info.GetEmail(),
-		info.GetUserName(),
-	).Error
-	if err != nil {
-		return nil, err
-	}
-
-	// Return the necessary user information
-	_, userModel := s.checkUserName(info.GetUserName())
-	return s.NewUserResult(userModel), nil
-}
-
-func (s *AuthenticationAndPostService) CheckUserAuthentication(ctx context.Context, info *authpost.UserInfo) (*authpost.UserResult, error) {
-	// Find user in the database using the provided information
-	existed, userModel := s.checkUserName(info.GetUserName())
-	if !existed {
-		return nil, errors.New("user does not exist")
-	}
-
-	// Check password matching
-	err := auth.CheckPasswordHash(userModel.HashedPassword, info.GetUserPassword())
-	if err != nil {
-		return nil, err
-	}
-
-	// Return the necessary user information
-	return s.NewUserResult(userModel), nil
-}
-
-func (s *AuthenticationAndPostService) EditUser(ctx context.Context, info *authpost.UserDetailInfo) (*authpost.UserResult, error) {
-	// Check if the userId which is changing information exists in the database
-	existed, userModel := s.checkUserName(info.GetUserName())
-	if !existed {
-		return &authpost.UserResult{}, errors.New("user does not exist")
-	}
-
-	// If the user exists, edit the information and return
-	var err error
-
-	// Edit password
-	if info.GetUserPassword() != "" {
-		salt, err := auth.GenerateRandomSalt()
-		if err != nil {
-			return &authpost.UserResult{}, err
-		}
-
-		hashed_password, err := auth.HashPassword(info.GetUserPassword(), salt)
-		if err != nil {
-			return &authpost.UserResult{}, err
-		}
-
-		err = s.db.Exec("update \"user\" set hashed_password = ?, salt = ? where id = ?", hashed_password, salt, userModel.ID).Error
-		if err != nil {
-			return &authpost.UserResult{}, err
-		}
-	}
-
-	// Edit first_name
-	if info.GetFirstName() != "" {
-		err = s.db.Exec("update \"user\" set first_name = ? where id = ?", info.GetFirstName(), userModel.ID).Error
-		if err != nil {
-			return &authpost.UserResult{}, err
-		}
-	}
-
-	// Edit last_name
-	if info.GetLastName() != "" {
-		err = s.db.Exec("update \"user\" set last_name = ? where id = ?", info.GetLastName(), userModel.ID).Error
-		if err != nil {
-			return &authpost.UserResult{}, err
-		}
-	}
-
-	// Edit dob
-	if info.GetDob() >= -2208988800 { // 1900-01-01
-		err = s.db.Exec("update \"user\" set dob = to_timestamp(?) where id = ?", info.GetDob(), userModel.ID).Error
-		if err != nil {
-			return &authpost.UserResult{}, err
-		}
-	}
-
-	// Edit email
-	if info.GetEmail() != "" {
-		err = s.db.Exec("update \"user\" set email = ? where id = ?", info.GetEmail(), userModel.ID).Error
-		if err != nil {
-			return &authpost.UserResult{}, err
-		}
-	}
-
-	// Return the necessary user information
-	_, userModel = s.checkUserName(info.GetUserName())
-	return s.NewUserResult(userModel), nil
-}
-
-func (s *AuthenticationAndPostService) GetUserFollower(ctx context.Context, info *authpost.UserInfo) (*authpost.UserFollower, error) {
-	// Check if the user exists
-	userModel := models.User{}
-	err := s.db.Raw("select * from \"user\" where user_name = ?", info.GetUserName()).Scan(&userModel).Error
-	if err != nil {
-		return &authpost.UserFollower{}, err
-	}
-
-	// If the user exists, return the followers
-	var followers []models.User
-	err = s.db.Raw("select follower_id from user_user where user_id = ?", userModel.ID).Scan(&followers).Error
-	if err != nil {
-		return &authpost.UserFollower{}, err
-	}
-
-	returnUserFolower := authpost.UserFollower{}
-	for _, follower := range followers {
-		followerInfo := authpost.UserInfo{UserId: follower.ID, UserName: follower.UserName}
-		returnUserFolower.Followers = append(returnUserFolower.Followers, &followerInfo)
-	}
-
-	return &returnUserFolower, nil
-}
-
-func (s *AuthenticationAndPostService) GetPostDetail(ctx context.Context, request *authpost.GetPostRequest) (*authpost.Post, error) {
-	// Check if the post exists
-	postModel := models.Post{}
-	err := s.db.Raw("select * from post where id = ?", request.GetPostId()).Scan(&postModel).Error
-	if err != nil {
-		return &authpost.Post{}, err
-	}
-
-	// If the post exists, return the post
-	returnPost := authpost.Post{
-		PostId:           postModel.ID,
-		UserId:           postModel.UserID,
-		ContentText:      postModel.ContentText,
-		ContentImagePath: postModel.ContentImagePath,
-		Visible:          postModel.Visible,
-		CreatedAt:        postModel.CreatedAt.Unix(),
-	}
-	return &returnPost, nil
-}
-
-func NewAuthenticationAndPostService(cfg *configs.AuthenticateAndPostConfig) (*AuthenticationAndPostService, error) {
 	// Connect to database
 	postgresConfig := postgres.Config{
 		DSN: cfg.Postgres.DSN,
 	}
 	db, err := gorm.Open(postgres.New(postgresConfig), &gorm.Config{})
 	if err != nil {
-		return &AuthenticationAndPostService{}, err
+		logger.Error("Failed to connect to database", zap.Error(err))
+		return nil, err
 	}
 
-	return &AuthenticationAndPostService{db: db}, err
+	// Configure connection pooling
+	sqlDB, err := db.DB()
+	if err != nil {
+		logger.Error("Failed to get underlying sql.DB", zap.Error(err))
+		return nil, err
+	}
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	// Initialize migration manager
+	migrationManager := utils.NewMigrationManager(db, &cfg.Postgres, logger)
+
+	// Run automatic database migrations
+	migrationDir := filepath.Join("migrations")
+	logger.Info("Running database migrations", zap.String("migration_dir", migrationDir))
+
+	// Temporarily skip migrations since they're already applied
+	logger.Info("Skipping migrations - they are already applied")
+	/*
+		if err := migrationManager.Migrate(migrationDir); err != nil {
+			logger.Error("Database migration failed", zap.Error(err))
+			return nil, err
+		}
+	*/
+
+	// Get migration status for logging
+	status, err := migrationManager.GetStatus(migrationDir)
+	if err != nil {
+		logger.Warn("Failed to get migration status", zap.Error(err))
+	} else {
+		logger.Info("Database migration status",
+			zap.Int("total_migrations", status.TotalMigrations),
+			zap.Int("applied_migrations", status.AppliedMigrations),
+			zap.Strings("pending_migrations", status.PendingMigrations),
+			zap.String("last_applied", status.LastApplied))
+	}
+
+	// Connect to NewsfeedPublishingClient if configured
+	var nfPubClient client_nfp.Client
+	if len(cfg.NewsfeedPublishing.Hosts) > 0 {
+		nfPubClient, err = client_nfp.NewClient(cfg.NewsfeedPublishing.Hosts)
+		if err != nil {
+			logger.Error("Failed to connect to newsfeed publishing service", zap.Error(err))
+			// Continue without newsfeed publishing client
+		} else {
+			logger.Info("Successfully connected to newsfeed publishing service")
+		}
+	}
+
+	logger.Info("AuthenticateAndPostService initialized successfully")
+	return &AuthenticateAndPostService{
+		db:               db,
+		migrationManager: migrationManager,
+		nfPubClient:      nfPubClient,
+		logger:           logger,
+	}, nil
 }
 
-// checkUserName checks if an user with provided username exists in database
-func (s *AuthenticationAndPostService) checkUserName(username string) (bool, models.User) {
-	var userModel = models.User{}
-	s.db.Raw("select * from \"user\" where user_name = ?", username).Scan(&userModel)
-
-	if userModel.ID == 0 {
-		return false, models.User{}
-	}
-	return true, userModel
+// Getter methods for health checks
+func (a *AuthenticateAndPostService) GetDB() *gorm.DB {
+	return a.db
 }
 
-func (s *AuthenticationAndPostService) NewUserResult(userModel models.User) *authpost.UserResult {
-	return &authpost.UserResult{
-		Status: 0, // OK status
-		Info: &authpost.UserDetailInfo{
-			UserId:       userModel.ID,
-			UserName:     userModel.UserName,
-			UserPassword: "",
-			FirstName:    userModel.FirstName,
-			LastName:     userModel.LastName,
-			Dob:          userModel.DOB.Unix(),
-			Email:        userModel.Email,
-		},
+func (a *AuthenticateAndPostService) GetLogger() *zap.Logger {
+	return a.logger
+}
+
+func (a *AuthenticateAndPostService) GetMigrationManager() *utils.MigrationManager {
+	return a.migrationManager
+}
+
+func (a *AuthenticateAndPostService) GetRedis() interface{} {
+	// AuthPost service doesn't directly use Redis, return nil
+	return nil
+}
+
+// GetMigrationStatus returns the current status of database migrations
+func (a *AuthenticateAndPostService) GetMigrationStatus() (*utils.MigrationStatus, error) {
+	return a.migrationManager.GetStatus("migrations")
+}
+
+// Close gracefully closes the AuthPost service resources
+func (a *AuthenticateAndPostService) Close() error {
+	if sqlDB, err := a.db.DB(); err == nil {
+		return sqlDB.Close()
 	}
+	return nil
+}
+
+// findUserById checks if an user with provided userId exists in database
+func (a *AuthenticateAndPostService) findUserById(userId int64) (exist bool, user types.User) {
+	result := a.db.First(&user, userId)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false, types.User{}
+	}
+	return true, user
+}
+
+// findUserByUserName checks if an user with provided username exists in database
+func (a *AuthenticateAndPostService) findUserByUserName(userName string) (exist bool, user types.User) {
+	result := a.db.Where(&types.User{UserName: userName}).First(&user)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false, types.User{}
+	}
+	return true, user
+}
+
+// findPostById checks if an user with provided userId exists in database
+func (a *AuthenticateAndPostService) findPostById(postId int64) (exist bool, post types.Post) {
+	result := a.db.First(&post, postId)
+	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+		return false, types.Post{}
+	}
+	return true, post
 }

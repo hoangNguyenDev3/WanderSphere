@@ -7,7 +7,14 @@ import (
 
 func AddUserRouter(r *gin.RouterGroup, svc *service.WebService) {
 	userRouter := r.Group("users")
-	userRouter.POST("register", svc.CreateUser)
+
+	// Public routes
+	userRouter.POST("signup", svc.CreateUser)
 	userRouter.POST("login", svc.CheckUserAuthentication)
-	userRouter.POST("edit", svc.EditUser)
+	userRouter.GET(":user_id", svc.GetUserDetailInfo)
+
+	// Protected routes that require authentication
+	authRouter := userRouter.Group("")
+	authRouter.Use(svc.AuthRequired())
+	authRouter.PUT("edit", svc.EditUser)
 }

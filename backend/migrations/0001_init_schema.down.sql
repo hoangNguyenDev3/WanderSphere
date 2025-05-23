@@ -1,5 +1,9 @@
-DROP TABLE IF EXISTS `user_user`;
-DROP TABLE IF EXISTS `like`;
-DROP TABLE IF EXISTS `comment`;
-DROP TABLE IF EXISTS `post`;
-DROP TABLE IF EXISTS `user`;
+
+DROP TABLE IF EXISTS likes;
+DROP TABLE IF EXISTS comments;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS following;
+DROP TABLE IF EXISTS users;
+
+-- Drop the trigger function
+DROP FUNCTION IF EXISTS update_updated_at_column();
