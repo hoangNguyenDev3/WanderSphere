@@ -6,6 +6,12 @@ type MessageResponse struct {
 	Status  string `json:"status,omitempty"`
 }
 
+// CreatePostResponse represents a successful post creation response
+type CreatePostResponse struct {
+	Message string `json:"message"`
+	PostId  int64  `json:"post_id"`
+}
+
 // LoginResponse represents a successful login response
 type LoginResponse struct {
 	Message string         `json:"message"`

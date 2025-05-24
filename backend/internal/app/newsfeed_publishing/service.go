@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -537,22 +538,25 @@ func (svc *NewsfeedPublishingService) updateFollowersCache(ctx context.Context, 
 		return nil
 	}
 
-	// If no followers, set an empty list with expiration
+	// First, delete any existing key to avoid type conflicts
+	svc.redisPool.Client.Del(ctx, followersKey)
+
+	// Cache the followers (including empty list) using Redis list operations
+	pipe := svc.redisPool.Client.Pipeline()
+
 	if len(followersIds) == 0 {
-		if err := svc.redisPool.Client.Set(ctx, followersKey, "[]", FollowerCacheExpirationTime).Err(); err != nil {
-			svc.logger.Error("Failed to cache empty followers list",
-				zap.Int64("user_id", userID),
-				zap.Error(err))
-			// Continue without caching - non-fatal
+		// For empty lists, we still create a list but with no elements
+		// This ensures the key exists as a list type, then set expiration
+		pipe.LPush(ctx, followersKey, "dummy")
+		pipe.LPop(ctx, followersKey) // Remove the dummy element, leaving an empty list
+	} else {
+		// Add all followers to the list
+		for _, id := range followersIds {
+			pipe.RPush(ctx, followersKey, id)
 		}
-		return nil
 	}
 
-	// Cache the followers with a reasonable expiration time
-	pipe := svc.redisPool.Client.Pipeline()
-	for _, id := range followersIds {
-		pipe.RPush(ctx, followersKey, id)
-	}
+	// Set expiration
 	pipe.Expire(ctx, followersKey, FollowerCacheExpirationTime)
 
 	_, err = pipe.Exec(ctx)
@@ -647,75 +651,91 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeeds(followerIds []strin
 
 	postIDStr := strconv.FormatInt(postID, 10)
 
-	// If Redis is not available, use memory store
-	if !svc.redisAvailable {
-		svc.logger.Info("Using memory store to add post to follower feeds",
+	// Always try Redis first, regardless of redisAvailable flag
+	// This ensures compatibility with the newsfeed service which only reads from Redis
+	if svc.redisPool != nil {
+		svc.logger.Info("Attempting to add post to follower feeds in Redis",
 			zap.Int("follower_count", len(followerIds)))
 
-		svc.memoryStore.mu.Lock()
+		ctx := context.Background()
+		errCount := 0
+
+		// Use pipelining for better performance with large follower counts
+		pipe := svc.redisPool.Client.Pipeline()
+
 		for _, id := range followerIds {
 			newsfeedKey := "newsfeed:" + id
-
-			// Initialize slice if not exists
-			if _, exists := svc.memoryStore.newsfeeds[newsfeedKey]; !exists {
-				svc.memoryStore.newsfeeds[newsfeedKey] = make([]string, 0)
-			}
-
-			// Add post to newsfeed
-			svc.memoryStore.newsfeeds[newsfeedKey] = append(svc.memoryStore.newsfeeds[newsfeedKey], postIDStr)
+			pipe.RPush(ctx, newsfeedKey, postIDStr)
 		}
-		svc.memoryStore.mu.Unlock()
 
-		svc.logger.Info("Successfully added post to all follower feeds in memory",
-			zap.Int("follower_count", len(followerIds)))
+		// Execute the pipeline
+		cmds, err := pipe.Exec(ctx)
+		if err != nil {
+			svc.logger.Error("Pipeline execution failed, trying individual updates", zap.Error(err))
+			// Fall back to individual updates
+			if err := svc.addPostToFollowerFeedsIndividually(ctx, followerIds, postIDStr); err != nil {
+				svc.logger.Error("Individual Redis updates also failed, falling back to memory store", zap.Error(err))
+				// Only use memory store if Redis is completely unreachable
+				return svc.addPostToFollowerFeedsInMemory(followerIds, postIDStr)
+			}
+			return nil
+		}
+
+		// Check for individual command errors
+		for i, cmd := range cmds {
+			if cmd.Err() != nil {
+				svc.logger.Error("Failed to add post to follower feed",
+					zap.String("follower_id", followerIds[i]),
+					zap.Error(cmd.Err()))
+				errCount++
+			}
+		}
+
+		if errCount > 0 {
+			svc.logger.Warn("Some follower feeds failed to update",
+				zap.Int("error_count", errCount),
+				zap.Int("total", len(followerIds)))
+		} else {
+			svc.logger.Info("Successfully added post to all follower feeds in Redis",
+				zap.Int("follower_count", len(followerIds)))
+		}
+
 		return nil
 	}
 
-	// Otherwise use Redis as normal
-	ctx := context.Background()
-	errCount := 0
+	// If no Redis pool is available, use memory store as last resort
+	svc.logger.Warn("No Redis pool available, using memory store (posts may not be visible in newsfeed service)")
+	return svc.addPostToFollowerFeedsInMemory(followerIds, postIDStr)
+}
 
-	// Use pipelining for better performance with large follower counts
-	pipe := svc.redisPool.Client.Pipeline()
+// addPostToFollowerFeedsInMemory stores posts in memory as a fallback
+func (svc *NewsfeedPublishingService) addPostToFollowerFeedsInMemory(followerIds []string, postIDStr string) error {
+	svc.logger.Info("Using memory store to add post to follower feeds",
+		zap.Int("follower_count", len(followerIds)))
 
+	svc.memoryStore.mu.Lock()
 	for _, id := range followerIds {
 		newsfeedKey := "newsfeed:" + id
-		pipe.RPush(ctx, newsfeedKey, postIDStr)
-	}
 
-	// Execute the pipeline
-	cmds, err := pipe.Exec(ctx)
-	if err != nil {
-		svc.logger.Error("Pipeline execution failed", zap.Error(err))
-		// Fall back to individual updates
-		return svc.addPostToFollowerFeedsIndividually(ctx, followerIds, postIDStr)
-	}
-
-	// Check for individual command errors
-	for i, cmd := range cmds {
-		if cmd.Err() != nil {
-			svc.logger.Error("Failed to add post to follower feed",
-				zap.String("follower_id", followerIds[i]),
-				zap.Error(cmd.Err()))
-			errCount++
+		// Initialize slice if not exists
+		if _, exists := svc.memoryStore.newsfeeds[newsfeedKey]; !exists {
+			svc.memoryStore.newsfeeds[newsfeedKey] = make([]string, 0)
 		}
-	}
 
-	if errCount > 0 {
-		svc.logger.Warn("Some follower feeds failed to update",
-			zap.Int("error_count", errCount),
-			zap.Int("total", len(followerIds)))
-	} else {
-		svc.logger.Info("Successfully added post to all follower feeds",
-			zap.Int("follower_count", len(followerIds)))
+		// Add post to newsfeed
+		svc.memoryStore.newsfeeds[newsfeedKey] = append(svc.memoryStore.newsfeeds[newsfeedKey], postIDStr)
 	}
+	svc.memoryStore.mu.Unlock()
 
+	svc.logger.Info("Successfully added post to all follower feeds in memory",
+		zap.Int("follower_count", len(followerIds)))
 	return nil
 }
 
 // addPostToFollowerFeedsIndividually adds posts to feeds one by one as a fallback
 func (svc *NewsfeedPublishingService) addPostToFollowerFeedsIndividually(ctx context.Context, followerIds []string, postIDStr string) error {
 	errCount := 0
+	totalErrs := make([]error, 0)
 
 	for _, id := range followerIds {
 		newsfeedKey := "newsfeed:" + id
@@ -734,6 +754,7 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeedsIndividually(ctx con
 					zap.String("follower_id", id),
 					zap.Error(redisErr))
 				errCount++
+				totalErrs = append(totalErrs, redisErr)
 				continue
 			}
 
@@ -747,7 +768,11 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeedsIndividually(ctx con
 		svc.logger.Warn("Some follower feeds failed to update in individual mode",
 			zap.Int("error_count", errCount),
 			zap.Int("total", len(followerIds)))
-		return errors.New("some follower feeds failed to update")
+
+		// If more than half the operations failed, consider Redis unavailable
+		if errCount > len(followerIds)/2 {
+			return fmt.Errorf("redis appears to be unavailable: %d/%d operations failed", errCount, len(followerIds))
+		}
 	}
 
 	return nil

@@ -6,7 +6,7 @@ import (
 
 // Base contains common fields for all models
 type Base struct {
-	ID        int64      `json:"id" gorm:"primaryKey"`
+	ID        int64      `json:"id" gorm:"primaryKey;autoIncrement"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at" gorm:"index"`
@@ -23,8 +23,10 @@ type User struct {
 	Email          string    `json:"email" gorm:"column:email;size:100;not null"`
 	UserName       string    `json:"user_name" gorm:"column:user_name;size:50;unique;not null"`
 	Posts          []*Post   `json:"-" gorm:"foreignKey:UserID"`
-	Followers      []*User   `json:"-" gorm:"many2many:following;joinForeignKey:user_id;joinReferences:follower_id"`
-	Followings     []*User   `json:"-" gorm:"many2many:following;joinForeignKey:follower_id;joinReferences:user_id"`
+	// Followers: Users who follow this user (this user's ID is user_id, followers' IDs are follower_id)
+	Followers []*User `json:"-" gorm:"many2many:following;joinForeignKey:user_id;joinReferences:follower_id"`
+	// Followings: Users that this user follows (this user's ID is follower_id, followed users' IDs are user_id)
+	Followings []*User `json:"-" gorm:"many2many:following;joinForeignKey:follower_id;joinReferences:user_id"`
 }
 
 // TableName returns the table name for User

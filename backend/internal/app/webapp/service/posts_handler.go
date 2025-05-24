@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -68,7 +69,12 @@ func (svc *WebService) CreatePost(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, types.MessageResponse{Message: "user not found"})
 		return
 	} else if resp.GetStatus() == pb_aap.CreatePostResponse_OK {
-		ctx.JSON(http.StatusOK, types.MessageResponse{Message: "OK"})
+		postId := resp.GetPostId()
+		response := types.CreatePostResponse{
+			Message: "OK",
+			PostId:  postId,
+		}
+		ctx.JSON(http.StatusOK, response)
 		return
 	} else {
 		ctx.JSON(http.StatusInternalServerError, types.MessageResponse{Message: "unknown error"})
@@ -183,12 +189,27 @@ func (svc *WebService) EditPost(ctx *gin.Context) {
 	}
 
 	// Call EditPost service
-	resp, err := svc.AuthenticateAndPostClient.EditPost(ctx, &pb_aap.EditPostRequest{
-		UserId:      int64(userId),
-		PostId:      int64(postId),
-		ContentText: jsonRequest.ContentText,
-		Visible:     jsonRequest.Visible,
-	})
+	grpcReq := &pb_aap.EditPostRequest{
+		UserId: int64(userId),
+		PostId: int64(postId),
+	}
+
+	// Set optional fields as pointers
+	if jsonRequest.ContentText != nil {
+		grpcReq.ContentText = jsonRequest.ContentText
+	}
+	if jsonRequest.ContentImagePath != nil {
+		// Convert []string to single string (as per existing implementation)
+		if len(*jsonRequest.ContentImagePath) > 0 {
+			imagePath := strings.Join(*jsonRequest.ContentImagePath, " ")
+			grpcReq.ContentImagePath = &imagePath
+		}
+	}
+	if jsonRequest.Visible != nil {
+		grpcReq.Visible = jsonRequest.Visible
+	}
+
+	resp, err := svc.AuthenticateAndPostClient.EditPost(ctx, grpcReq)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
 		return
@@ -425,7 +446,8 @@ func (svc *WebService) LikePost(ctx *gin.Context) {
 // @Tags posts
 // @Accept json
 // @Produce json
-// @Param request body types.GetS3PresignedUrlRequest true "File details"
+// @Param file_name query string true "File name"
+// @Param file_type query string true "File type"
 // @Success 200 {object} types.GetS3PresignedUrlResponse "Presigned URL"
 // @Failure 400 {object} types.MessageResponse "Validation error"
 // @Failure 401 {object} types.MessageResponse "Unauthorized"
@@ -440,16 +462,16 @@ func (svc *WebService) GetS3PresignedUrl(ctx *gin.Context) {
 		return
 	}
 
-	// Validate request
-	var jsonRequest types.GetS3PresignedUrlRequest
-	err = ctx.ShouldBindJSON(&jsonRequest)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, types.MessageResponse{Message: err.Error()})
+	// Get query parameters
+	fileName := ctx.Query("file_name")
+	fileType := ctx.Query("file_type")
+
+	if fileName == "" {
+		ctx.JSON(http.StatusBadRequest, types.MessageResponse{Message: "file_name parameter is required"})
 		return
 	}
-	err = validate.Struct(jsonRequest)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, types.MessageResponse{Message: err.Error()})
+	if fileType == "" {
+		ctx.JSON(http.StatusBadRequest, types.MessageResponse{Message: "file_type parameter is required"})
 		return
 	}
 
@@ -458,7 +480,7 @@ func (svc *WebService) GetS3PresignedUrl(ctx *gin.Context) {
 	if svc.isDevelopmentMode() {
 		expirationTime := time.Now().Add(15 * time.Minute)
 		mockURL := fmt.Sprintf("https://wandersphere-dev-bucket.s3.amazonaws.com/uploads/user_%d/%s?signature=mock_dev_signature",
-			userId, jsonRequest.FileName)
+			userId, fileName)
 
 		ctx.JSON(http.StatusOK, types.GetS3PresignedUrlResponse{
 			URL:            mockURL,

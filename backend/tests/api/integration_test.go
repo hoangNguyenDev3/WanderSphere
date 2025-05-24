@@ -302,21 +302,34 @@ func TestSocialInteractionJourney(t *testing.T) {
 }
 
 func TestContentLifecycleIntegration(t *testing.T) {
-	client, err := utils.NewAPIClient()
+	// Create separate clients for each user to avoid session conflicts
+	client1, err := utils.NewAPIClient()
 	if err != nil {
-		t.Fatalf("Failed to create API client: %v", err)
+		t.Fatalf("Failed to create API client 1: %v", err)
 	}
 
-	authHelper := utils.NewAuthHelper(client)
+	client2, err := utils.NewAPIClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client 2: %v", err)
+	}
+
+	authHelper1 := utils.NewAuthHelper(client1)
+	authHelper2 := utils.NewAuthHelper(client2)
+
+	// Use a neutral client for GET requests that don't require specific authentication
+	neutralClient, err := utils.NewAPIClient()
+	if err != nil {
+		t.Fatalf("Failed to create neutral API client: %v", err)
+	}
 
 	t.Run("Complete Content Lifecycle", func(t *testing.T) {
-		// Create two users: content creator and content consumer
-		creator, err := authHelper.CreateTestUser("", "", "")
+		// Create two users: content creator and content consumer with separate clients
+		creator, err := authHelper1.CreateTestUser("", "", "")
 		if err != nil {
 			t.Fatalf("Failed to create creator user: %v", err)
 		}
 
-		consumer, err := authHelper.CreateTestUser("", "", "")
+		consumer, err := authHelper2.CreateTestUser("", "", "")
 		if err != nil {
 			t.Fatalf("Failed to create consumer user: %v", err)
 		}
@@ -332,20 +345,11 @@ func TestContentLifecycleIntegration(t *testing.T) {
 		}
 
 		// Step 2: Creator creates a post
-		initialPostReq := utils.CreatePostRequest{
-			ContentText: "Just discovered this amazing hiking trail! Perfect for weekend adventures.",
-			Visible:     true,
-		}
-
-		createResp, err := creator.POST("/posts", initialPostReq)
+		testPostID, err := creator.CreateTestPost("Just discovered this amazing hiking trail! Perfect for weekend adventures.", true)
 		if err != nil {
 			t.Fatalf("Failed to create initial post: %v", err)
 		}
-
-		if !createResp.IsSuccess() {
-			t.Fatalf("Post creation failed with status %d", createResp.StatusCode)
-		}
-		t.Logf("✓ Creator posted initial content")
+		t.Logf("✓ Creator posted initial content with ID: %d", testPostID)
 
 		// Step 3: Check post appears in Consumer's newsfeed
 		consumerNewsfeedResp, err := consumer.GET("/newsfeed")
@@ -359,20 +363,20 @@ func TestContentLifecycleIntegration(t *testing.T) {
 		}
 
 		// Step 4: Consumer interacts with the post
-		// Like the post (assuming post ID 1)
-		likeResp, err := consumer.POST("/posts/1/likes", nil)
+		// Like the post using the actual post ID
+		likeResp, err := consumer.POST(fmt.Sprintf("/posts/%d/likes", testPostID), nil)
 		if err == nil && likeResp.IsSuccess() {
 			t.Logf("✓ Consumer liked the post")
 		} else {
 			t.Logf("⚠ Consumer failed to like the post")
 		}
 
-		// Comment on the post
+		// Comment on the post using the actual post ID
 		commentReq := utils.CreatePostCommentRequest{
 			ContentText: "This looks incredible! Could you share the exact location?",
 		}
 
-		commentResp, err := consumer.POST("/posts/1", commentReq)
+		commentResp, err := consumer.POST(fmt.Sprintf("/posts/%d", testPostID), commentReq)
 		if err == nil && commentResp.IsSuccess() {
 			t.Logf("✓ Consumer commented on the post")
 		} else {
@@ -380,12 +384,14 @@ func TestContentLifecycleIntegration(t *testing.T) {
 		}
 
 		// Step 5: Creator edits the post to add more details
+		contentText := "Just discovered this amazing hiking trail! Perfect for weekend adventures. UPDATE: It's located in Pine Ridge National Park, Trail #7."
+		visible := true
 		editPostReq := utils.EditPostRequest{
-			ContentText: "Just discovered this amazing hiking trail! Perfect for weekend adventures. UPDATE: It's located in Pine Ridge National Park, Trail #7.",
-			Visible:     true,
+			ContentText: &contentText,
+			Visible:     &visible,
 		}
 
-		editResp, err := creator.PUT("/posts/1", editPostReq)
+		editResp, err := creator.PUT(fmt.Sprintf("/posts/%d", testPostID), editPostReq)
 		if err == nil && editResp.IsSuccess() {
 			t.Logf("✓ Creator edited the post with more details")
 		} else {
@@ -397,7 +403,7 @@ func TestContentLifecycleIntegration(t *testing.T) {
 			ContentText: "Thanks for asking! It's Pine Ridge National Park, Trail #7. The view from the top is worth the climb!",
 		}
 
-		replyResp, err := creator.POST("/posts/1", replyReq)
+		replyResp, err := creator.POST(fmt.Sprintf("/posts/%d", testPostID), replyReq)
 		if err == nil && replyResp.IsSuccess() {
 			t.Logf("✓ Creator replied to the comment")
 		} else {
@@ -405,7 +411,7 @@ func TestContentLifecycleIntegration(t *testing.T) {
 		}
 
 		// Step 7: Check final post state
-		finalPostResp, err := client.GET("/posts/1")
+		finalPostResp, err := neutralClient.GET(fmt.Sprintf("/posts/%d", testPostID))
 		if err == nil && finalPostResp.IsSuccess() {
 			var postDetails utils.PostDetailInfoResponse
 			if finalPostResp.ParseJSON(&postDetails) == nil {
@@ -413,7 +419,7 @@ func TestContentLifecycleIntegration(t *testing.T) {
 					len(postDetails.UsersLiked), len(postDetails.Comments))
 
 				// Verify content was updated
-				if postDetails.ContentText != editPostReq.ContentText {
+				if postDetails.ContentText != contentText {
 					t.Logf("⚠ Post content may not have been updated as expected")
 				} else {
 					t.Logf("✓ Post content was successfully updated")
@@ -424,7 +430,13 @@ func TestContentLifecycleIntegration(t *testing.T) {
 		}
 
 		// Step 8: Create another user who joins the conversation
-		lateJoiner, err := authHelper.CreateTestUser("", "", "")
+		client3, err := utils.NewAPIClient()
+		if err != nil {
+			t.Fatalf("Failed to create API client 3: %v", err)
+		}
+		authHelper3 := utils.NewAuthHelper(client3)
+
+		lateJoiner, err := authHelper3.CreateTestUser("", "", "")
 		if err == nil {
 			t.Logf("✓ Late joiner user created (ID:%d)", lateJoiner.UserID)
 
@@ -439,14 +451,14 @@ func TestContentLifecycleIntegration(t *testing.T) {
 				ContentText: "I've been to Pine Ridge too! Trail #7 is definitely one of the best.",
 			}
 
-			lateCommentResp, err := lateJoiner.POST("/posts/1", lateCommentReq)
+			lateCommentResp, err := lateJoiner.POST(fmt.Sprintf("/posts/%d", testPostID), lateCommentReq)
 			if err == nil && lateCommentResp.IsSuccess() {
 				t.Logf("✓ Late joiner added their comment")
 			}
 		}
 
 		// Step 9: Check Creator's posts list
-		creatorPostsResp, err := client.GET(fmt.Sprintf("/friends/%d/posts", creator.UserID))
+		creatorPostsResp, err := neutralClient.GET(fmt.Sprintf("/friends/%d/posts", creator.UserID))
 		if err == nil && creatorPostsResp.IsSuccess() {
 			var creatorPosts utils.UserPostsResponse
 			if creatorPostsResp.ParseJSON(&creatorPosts) == nil {

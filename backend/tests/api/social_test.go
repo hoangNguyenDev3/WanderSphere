@@ -111,20 +111,27 @@ func TestFollowUser(t *testing.T) {
 }
 
 func TestUnfollowUser(t *testing.T) {
-	client, err := utils.NewAPIClient()
+	// Create separate clients for each user to avoid session conflicts
+	client1, err := utils.NewAPIClient()
 	if err != nil {
-		t.Fatalf("Failed to create API client: %v", err)
+		t.Fatalf("Failed to create API client 1: %v", err)
 	}
 
-	authHelper := utils.NewAuthHelper(client)
+	client2, err := utils.NewAPIClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client 2: %v", err)
+	}
 
-	// Create two test users
-	user1, err := authHelper.CreateTestUser("", "", "")
+	authHelper1 := utils.NewAuthHelper(client1)
+	authHelper2 := utils.NewAuthHelper(client2)
+
+	// Create two test users with separate clients
+	user1, err := authHelper1.CreateTestUser("", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create test user 1: %v", err)
 	}
 
-	user2, err := authHelper.CreateTestUser("", "", "")
+	user2, err := authHelper2.CreateTestUser("", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create test user 2: %v", err)
 	}
@@ -191,26 +198,39 @@ func TestUnfollowUser(t *testing.T) {
 }
 
 func TestGetUserFollowers(t *testing.T) {
-	client, err := utils.NewAPIClient()
+	// Create separate clients for each user to avoid session conflicts
+	client1, err := utils.NewAPIClient()
 	if err != nil {
-		t.Fatalf("Failed to create API client: %v", err)
+		t.Fatalf("Failed to create API client 1: %v", err)
 	}
 
-	authHelper := utils.NewAuthHelper(client)
+	client2, err := utils.NewAPIClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client 2: %v", err)
+	}
 
-	// Create test users
-	user1, err := authHelper.CreateTestUser("", "", "")
+	authHelper1 := utils.NewAuthHelper(client1)
+	authHelper2 := utils.NewAuthHelper(client2)
+
+	// Create test users with separate clients
+	user1, err := authHelper1.CreateTestUser("", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create test user 1: %v", err)
 	}
 
-	user2, err := authHelper.CreateTestUser("", "", "")
+	user2, err := authHelper2.CreateTestUser("", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create test user 2: %v", err)
 	}
 
+	// Use a neutral client for GET requests that don't require specific authentication
+	neutralClient, err := utils.NewAPIClient()
+	if err != nil {
+		t.Fatalf("Failed to create neutral API client: %v", err)
+	}
+
 	t.Run("Valid Get User Followers", func(t *testing.T) {
-		resp, err := client.GET(fmt.Sprintf("/friends/%d/followers", user1.UserID))
+		resp, err := neutralClient.GET(fmt.Sprintf("/friends/%d/followers", user1.UserID))
 		if err != nil {
 			t.Fatalf("Get user followers request failed: %v", err)
 		}
@@ -234,7 +254,7 @@ func TestGetUserFollowers(t *testing.T) {
 
 	t.Run("Get Followers - Nonexistent User", func(t *testing.T) {
 		nonexistentUserID := 999999
-		resp, err := client.GET(fmt.Sprintf("/friends/%d/followers", nonexistentUserID))
+		resp, err := neutralClient.GET(fmt.Sprintf("/friends/%d/followers", nonexistentUserID))
 		if err != nil {
 			t.Fatalf("Get nonexistent user followers request failed: %v", err)
 		}
@@ -257,7 +277,7 @@ func TestGetUserFollowers(t *testing.T) {
 			t.Logf("Follow successful, now checking followers")
 
 			// Get User1's followers (should include User2)
-			resp, err := client.GET(fmt.Sprintf("/friends/%d/followers", user1.UserID))
+			resp, err := neutralClient.GET(fmt.Sprintf("/friends/%d/followers", user1.UserID))
 			if err != nil {
 				t.Fatalf("Get followers after follow failed: %v", err)
 			}
@@ -286,26 +306,39 @@ func TestGetUserFollowers(t *testing.T) {
 }
 
 func TestGetUserFollowings(t *testing.T) {
-	client, err := utils.NewAPIClient()
+	// Create separate clients for each user to avoid session conflicts
+	client1, err := utils.NewAPIClient()
 	if err != nil {
-		t.Fatalf("Failed to create API client: %v", err)
+		t.Fatalf("Failed to create API client 1: %v", err)
 	}
 
-	authHelper := utils.NewAuthHelper(client)
+	client2, err := utils.NewAPIClient()
+	if err != nil {
+		t.Fatalf("Failed to create API client 2: %v", err)
+	}
 
-	// Create test users
-	user1, err := authHelper.CreateTestUser("", "", "")
+	authHelper1 := utils.NewAuthHelper(client1)
+	authHelper2 := utils.NewAuthHelper(client2)
+
+	// Create test users with separate clients
+	user1, err := authHelper1.CreateTestUser("", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create test user 1: %v", err)
 	}
 
-	user2, err := authHelper.CreateTestUser("", "", "")
+	user2, err := authHelper2.CreateTestUser("", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create test user 2: %v", err)
 	}
 
+	// Use a neutral client for GET requests that don't require specific authentication
+	neutralClient, err := utils.NewAPIClient()
+	if err != nil {
+		t.Fatalf("Failed to create neutral API client: %v", err)
+	}
+
 	t.Run("Valid Get User Followings", func(t *testing.T) {
-		resp, err := client.GET(fmt.Sprintf("/friends/%d/followings", user1.UserID))
+		resp, err := neutralClient.GET(fmt.Sprintf("/friends/%d/followings", user1.UserID))
 		if err != nil {
 			t.Fatalf("Get user followings request failed: %v", err)
 		}
@@ -329,7 +362,7 @@ func TestGetUserFollowings(t *testing.T) {
 
 	t.Run("Get Followings - Nonexistent User", func(t *testing.T) {
 		nonexistentUserID := 999999
-		resp, err := client.GET(fmt.Sprintf("/friends/%d/followings", nonexistentUserID))
+		resp, err := neutralClient.GET(fmt.Sprintf("/friends/%d/followings", nonexistentUserID))
 		if err != nil {
 			t.Fatalf("Get nonexistent user followings request failed: %v", err)
 		}
@@ -352,7 +385,7 @@ func TestGetUserFollowings(t *testing.T) {
 			t.Logf("Follow successful, now checking followings")
 
 			// Get User1's followings (should include User2)
-			resp, err := client.GET(fmt.Sprintf("/friends/%d/followings", user1.UserID))
+			resp, err := neutralClient.GET(fmt.Sprintf("/friends/%d/followings", user1.UserID))
 			if err != nil {
 				t.Fatalf("Get followings after follow failed: %v", err)
 			}

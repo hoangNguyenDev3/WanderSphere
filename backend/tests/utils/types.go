@@ -34,9 +34,9 @@ type CreatePostRequest struct {
 }
 
 type EditPostRequest struct {
-	ContentText      string   `json:"content_text,omitempty"`
-	ContentImagePath []string `json:"content_image_path,omitempty"`
-	Visible          bool     `json:"visible,omitempty"`
+	ContentText      *string   `json:"content_text,omitempty"`
+	ContentImagePath *[]string `json:"content_image_path,omitempty"`
+	Visible          *bool     `json:"visible,omitempty"`
 }
 
 type CreatePostCommentRequest struct {
@@ -53,6 +53,11 @@ type GetS3PresignedUrlRequest struct {
 type MessageResponse struct {
 	Message string `json:"message"`
 	Status  string `json:"status"`
+}
+
+type CreatePostResponse struct {
+	Message string `json:"message"`
+	PostId  int64  `json:"post_id"`
 }
 
 type ErrorResponse struct {

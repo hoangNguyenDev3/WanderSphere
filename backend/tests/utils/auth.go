@@ -185,22 +185,33 @@ func (a *AuthHelper) EditUserProfile(req EditUserRequest) (*MessageResponse, err
 	return &editResp, nil
 }
 
-// CreateMultipleTestUsers creates multiple test users for testing scenarios
+// CreateMultipleTestUsers creates multiple test users for testing scenarios with isolated sessions
 func (a *AuthHelper) CreateMultipleTestUsers(count int) ([]*AuthenticatedUser, error) {
 	users := make([]*AuthenticatedUser, 0, count)
 
 	for i := 0; i < count; i++ {
+		// Create a new isolated HTTP client for each user to prevent session conflicts
+		isolatedClient, err := NewAPIClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create isolated client for user %d: %w", i, err)
+		}
+
+		isolatedAuthHelper := NewAuthHelper(isolatedClient)
+
 		// Generate more unique usernames for multiple users
 		username := GenerateUniqueUsername(fmt.Sprintf("testuser_multi_%d", i))
 
-		user, err := a.CreateTestUser(username, "", "")
+		user, err := isolatedAuthHelper.CreateTestUser(username, "", "")
 		if err != nil {
 			return nil, fmt.Errorf("failed to create test user %d: %w", i, err)
 		}
+
+		// Ensure the user has their own isolated client
+		user.Client = isolatedClient
 		users = append(users, user)
 
-		// Small delay to ensure different timestamps
-		time.Sleep(1 * time.Millisecond)
+		// Small delay to ensure different timestamps and avoid race conditions
+		time.Sleep(5 * time.Millisecond)
 	}
 
 	return users, nil
@@ -237,4 +248,51 @@ func (u *AuthenticatedUser) DELETE(path string) (*APIResponse, error) {
 // GetUserIDStr returns the user ID as a string for URL path parameters
 func (u *AuthenticatedUser) GetUserIDStr() string {
 	return strconv.Itoa(u.UserID)
+}
+
+// CreateTestPost creates a test post and returns the post ID
+func (u *AuthenticatedUser) CreateTestPost(contentText string, visible bool) (int64, error) {
+	createReq := CreatePostRequest{
+		ContentText: contentText,
+		Visible:     visible,
+	}
+
+	resp, err := u.POST("/posts", createReq)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create test post: %w", err)
+	}
+
+	if !resp.IsSuccess() {
+		return 0, fmt.Errorf("post creation failed with status %d: %s", resp.StatusCode, resp.GetStringBody())
+	}
+
+	var createResp CreatePostResponse
+	if err := resp.ParseJSON(&createResp); err != nil {
+		return 0, fmt.Errorf("failed to parse create post response: %w", err)
+	}
+
+	if createResp.PostId == 0 {
+		return 0, fmt.Errorf("create post response missing post ID")
+	}
+
+	return createResp.PostId, nil
+}
+
+// CreateIsolatedTestUser creates a test user with its own isolated HTTP client and session
+func CreateIsolatedTestUser(username, email, password string) (*AuthenticatedUser, error) {
+	// Create a new isolated HTTP client for this user
+	client, err := NewAPIClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create isolated client: %w", err)
+	}
+
+	authHelper := NewAuthHelper(client)
+	user, err := authHelper.CreateTestUser(username, email, password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create isolated test user: %w", err)
+	}
+
+	// Ensure the user has the isolated client
+	user.Client = client
+	return user, nil
 }
