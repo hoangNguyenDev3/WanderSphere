@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/storage"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	"go.uber.org/zap"
@@ -21,6 +22,7 @@ type WebService struct {
 	AuthenticateAndPostClient pb_aap.AuthenticateAndPostClient
 	NewsfeedClient            pb_nf.NewsfeedClient
 	RedisPool                 *utils.RedisPool
+	BinaryStorage             storage.BinaryStorage
 	Logger                    *zap.Logger
 	Config                    *configs.WebConfig
 }
@@ -50,10 +52,30 @@ func NewWebService(cfg *configs.WebConfig) (*WebService, error) {
 
 	logger.Info("Successfully initialized enhanced Redis connection pool for Web service")
 
+	// Initialize binary storage
+	s3Config := utils.S3Config{
+		AccessKeyID:     cfg.S3.AccessKeyID,
+		SecretAccessKey: cfg.S3.SecretAccessKey,
+		Region:          cfg.S3.Region,
+		Bucket:          cfg.S3.Bucket,
+		Endpoint:        cfg.S3.Endpoint,
+		DisableSSL:      cfg.S3.DisableSSL,
+		ForcePathStyle:  cfg.S3.ForcePathStyle,
+	}
+
+	binaryStorage, err := storage.NewS3BinaryStorage(s3Config, logger)
+	if err != nil {
+		logger.Error("Failed to create binary storage", zap.Error(err))
+		return nil, errors.New("binary storage creation failed")
+	}
+
+	logger.Info("Successfully initialized S3 binary storage for Web service")
+
 	return &WebService{
 		AuthenticateAndPostClient: aapClient,
 		NewsfeedClient:            nfClient,
 		RedisPool:                 redisPool,
+		BinaryStorage:             binaryStorage,
 		Logger:                    logger,
 		Config:                    cfg,
 	}, nil

@@ -88,8 +88,7 @@ Examples:
   system_admin -cmd kafka-create-topic -service newsfeed_publishing -topic test_topic
 
   # Check Redis status
-  system_admin -cmd redis-status -service webapp
-`)
+  system_admin -cmd redis-status -service webapp`)
 }
 
 func handleMigrationStatus(configPath string) {

@@ -15,6 +15,16 @@ kafka: &KAFKA
 logger: &LOGGER
   level: "debug"
 
+# S3 configuration for binary storage
+s3: &S3
+  access_key_id: "minioadmin"
+  secret_access_key: "minioadmin"
+  region: "us-east-1"
+  bucket: "wandersphere-binaries"
+  endpoint: "http://minio:9000"  # Use MinIO for local development
+  disable_ssl: true  # Set to false for production AWS S3
+  force_path_style: true  # Required for MinIO, set to false for AWS S3
+
 # Common auth configuration
 auth: &AUTH
   session:
@@ -30,6 +40,7 @@ authenticate_and_post_config: &AAP
   logger: *LOGGER
   postgres: *POSTGRES
   redis: *REDIS
+  s3: *S3
   newsfeed_publishing:
     hosts: ["nfp:19004"]
   auth: *AUTH
@@ -41,6 +52,7 @@ newsfeed_config: &NF
   postgres: *POSTGRES
   redis: *REDIS
   kafka: *KAFKA
+  s3: *S3
   authenticate_and_post:
     hosts: ["aap:19001"]
 
@@ -50,6 +62,7 @@ newsfeed_publishing_config: &NFP
   logger: *LOGGER
   redis: *REDIS
   kafka: *KAFKA
+  s3: *S3
   authenticate_and_post:
     hosts: ["aap:19001"]
 
@@ -64,4 +77,5 @@ web_config:
   newsfeed:
     hosts: ["nf:19002"]
   redis: *REDIS
+  s3: *S3
   auth: *AUTH

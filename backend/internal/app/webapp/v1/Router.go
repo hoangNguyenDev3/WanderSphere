@@ -14,4 +14,5 @@ func AddAllRouter(r *gin.RouterGroup, webService *service.WebService) {
 	AddFriendRouter(r, webService)
 	AddPostRouter(r, webService)
 	AddNewsfeedRouter(r, webService)
+	AddBinaryRouter(r, webService)
 }

@@ -1,221 +1,248 @@
+# WanderSphere Backend - Makefile
+# Simple commands to run the system from scratch
+
+# Database configuration
 USERNAME = "postgres"
 PASSWORD = "123456"
 DB_HOST = "localhost"
 DB_PORT = "5434"
 DB_NAME = "wander_sphere"
 
-# Database management
-create_db:
-	PGPASSWORD=$(PASSWORD) createdb -h $(DB_HOST) -p $(DB_PORT) -U $(USERNAME) $(DB_NAME) || true
+#################################
+# Quick Start Commands
+#################################
 
-# Database migrations
-new_migration:
-	migrate create -ext sql -dir migrations/ -seq $(MESSAGE_NAME)
-up_migration: create_db
+# Show all available commands
+help:
+	@echo "🏗️  WanderSphere Backend - Available Commands"
+	@echo "============================================="
+	@echo ""
+	@echo "🚀 Essential Commands:"
+	@echo "  make start       - Start the entire system from scratch"
+	@echo "  make stop        - Stop the entire system"
+	@echo "  make health      - Check if all services are healthy"
+	@echo "  make test-api    - Run comprehensive API tests"
+	@echo "  make dev         - Development mode (keeps services running)"
+	@echo ""
+	@echo "⚙️  Step-by-step Commands:"
+	@echo "  make infra       - Start infrastructure services (postgres, redis, kafka)"
+	@echo "  make migrate     - Run database migrations"
+	@echo "  make services    - Start application services"
+	@echo ""
+	@echo "🧪 Testing Commands:"
+	@echo "  make test        - Run backend unit tests"
+	@echo "  make test-integration - Run integration tests (tests/ folder)"
+	@echo "  make test-all    - Run all tests (unit + integration)"
+	@echo "  make test-verbose - Run backend tests with verbose output"
+	@echo "  make test-coverage - Run backend tests with coverage report"
+	@echo ""
+	@echo "📊 Database Commands:"
+	@echo "  make new-migration MESSAGE_NAME=name - Create new migration"
+	@echo "  make migrate-up  - Run migrations manually"
+	@echo "  make migrate-down - Rollback migrations"
+	@echo ""
+	@echo "🛠️  Development Commands:"
+	@echo "  make dev-authpost - Run AuthPost service locally"
+	@echo "  make dev-newsfeed - Run Newsfeed service locally"
+	@echo "  make dev-webapp  - Run Web API service locally"
+	@echo "  make dev-nfp     - Run NFP service locally"
+	@echo ""
+	@echo "📚 Documentation:"
+	@echo "  make docs        - Generate API documentation"
+	@echo ""
+	@echo "🧹 Cleanup:"
+	@echo "  make clean       - Clean Docker artifacts"
+	@echo ""
+	@echo "ℹ️  For more details, see the README.md"
+
+# Start the entire system from scratch (recommended for new users)
+start: infra migrate services health
+	@echo ""
+	@echo "🎉 WanderSphere system is now running!"
+	@echo "API Base URL: http://localhost:19003/api/v1"
+	@echo "Swagger UI: http://localhost:19003/swagger/index.html"
+	@echo ""
+	@echo "To run tests: make test-api"
+	@echo "To stop: make stop"
+
+# Stop the entire system
+stop:
+	@echo "🛑 Stopping WanderSphere system..."
+	docker-compose down --volumes --remove-orphans
+	@echo "✅ System stopped"
+
+# Start infrastructure services only (postgres, redis, kafka)
+infra:
+	@echo "🔧 Starting infrastructure services..."
+	docker-compose --profile infra up -d
+	@echo "⏳ Waiting for services to be ready..."
+	@sleep 30
+	@echo "✅ Infrastructure services started"
+
+# Start all application services 
+services:
+	@echo "🚀 Starting application services..."
+	docker-compose --profile all up -d
+	@echo "⏳ Waiting for services to start..."
+	@sleep 45
+	@echo "✅ Application services started"
+
+# Run database migrations
+migrate:
+	@echo "📊 Running database migrations..."
 	migrate -path migrations/ -database "postgresql://$(USERNAME):$(PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose up
-down_migration:
+	@echo "✅ Database migrations completed"
+
+# Run comprehensive API tests using run_tests.sh script
+test-api:
+	@echo "🧪 Running API tests..."
+	cd tests && ./run_tests.sh
+	@echo "✅ API tests completed"
+
+# Quick health check for all services
+health:
+	@echo "🏥 Checking service health..."
+	@echo -n "AuthPost (19101): " && curl -s --max-time 3 http://localhost:19101/health >/dev/null && echo "✅ OK" || echo "❌ Down"
+	@echo -n "Newsfeed (19102): " && curl -s --max-time 3 http://localhost:19102/health >/dev/null && echo "✅ OK" || echo "❌ Down"
+	@echo -n "Web API (19003): " && curl -s --max-time 3 http://localhost:19003/health >/dev/null && echo "✅ OK" || echo "❌ Down"
+	@echo -n "NFP (19104): " && curl -s --max-time 3 http://localhost:19104/health >/dev/null && echo "✅ OK" || echo "❌ Down"
+
+# Development mode - keeps services running for manual testing
+dev: start
+	@echo "🔧 Development mode: Services will keep running"
+	@echo "To stop: make stop"
+
+#################################
+# Database Management
+#################################
+
+# Create a new migration
+new-migration:
+	@if [ -z "$(MESSAGE_NAME)" ]; then echo "❌ Please provide MESSAGE_NAME: make new-migration MESSAGE_NAME=create_users_table"; exit 1; fi
+	migrate create -ext sql -dir migrations/ -seq $(MESSAGE_NAME)
+
+# Run migrations manually
+migrate-up:
+	migrate -path migrations/ -database "postgresql://$(USERNAME):$(PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose up
+
+# Rollback migrations
+migrate-down:
 	migrate -path migrations/ -database "postgresql://$(USERNAME):$(PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose down
 
-# Protobuf generation
-proto: 
-	chmod +x scripts/regenerate_protos.sh
-	./scripts/regenerate_protos.sh
+#################################
+# Testing Commands
+#################################
 
-proto_aap:
-	protoc --go_out=./pkg/types/proto/pb/authpost/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/authpost/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/authpost.proto 
-proto_newsfeed:
-	protoc --go_out=./pkg/types/proto/pb/newsfeed/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/newsfeed/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/newsfeed.proto 
-proto_newsfeed_publishing:
-	protoc --go_out=./pkg/types/proto/pb/newsfeed_publishing/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/newsfeed_publishing/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/newsfeed_publishing.proto 
-
-# Dependencies
-.PHONY: vendor
-vendor:
-	go mod vendor -v
-
-# Docker management
-docker_clear:
-	docker volume rm $(docker volume ls -qf dangling=true) & docker rmi $(docker images -qf "dangling=true")
-
-# Docker Compose - full stack
-compose_up:
-	docker-compose --profile all up
-compose_up_rebuild:
-	docker-compose --profile all up --build --force-recreate
-compose_down:
-	docker-compose down
-
-# Docker Compose - individual services
-docker_authpost:
-	docker-compose --profile aap --profile infra up
-docker_newsfeed:
-	docker-compose --profile newsfeed --profile infra up
-docker_newsfeed_publishing:
-	docker-compose --profile nfp --profile infra up
-docker_webapp:
-	docker-compose --profile web up
-docker_infra:
-	docker-compose --profile infra up
-
-# Local development (direct run)
-dev_authpost:
-	go run cmd/authpost/main.go
-dev_newsfeed:
-	go run cmd/newsfeed/main.go
-dev_newsfeed_publishing:
-	go run cmd/newsfeed_publishing/main.go
-dev_webapp:
-	go run cmd/webapp/main.go
-
-# Documentation
-gen_swagger:
-	swag init -g cmd/webapp/main.go --parseDependency --parseInternal --exclude .git,logs,personal --output docs
-
-# Serve swagger documentation (requires swagger-ui or similar tool)
-serve_swagger:
-	@echo "Swagger documentation generated at docs/"
-	@echo "JSON: http://localhost:19003/swagger/doc.json"
-	@echo "UI: http://localhost:19003/swagger/index.html"
-	@echo "Make sure the web service is running: make docker_webapp"
-
-# Health checks for all services
-health_check:
-	@echo "Checking service health..."
-	@echo "AuthPost (19101):" && curl -s http://localhost:19101/health || echo "❌ Not responding"
-	@echo "Newsfeed (19102):" && curl -s http://localhost:19102/health || echo "❌ Not responding"  
-	@echo "Web (19003):" && curl -s http://localhost:19003/health || echo "❌ Not responding"
-	@echo "NFP (19104):" && curl -s http://localhost:19104/health || echo "❌ Not responding"
-
-# Test commands
-.PHONY: test test-verbose test-coverage test-integration
-
-# Run all tests
+# Run backend unit tests only
 test:
 	go test ./...
 
-# Run tests with verbose output
+# Run integration tests in tests/ folder only  
+test-integration: start
+	@echo "🧪 Running integration tests..."
+	cd tests && go test -v ./...
+
+# Run all tests (backend unit tests + integration tests)
+test-all:
+	@echo "🧪 Running all tests..."
+	-go test ./...
+	@echo "🧪 Running integration tests..."
+	cd tests && go test -v ./...
+	@echo "✅ All tests completed"
+
+# Run backend tests with verbose output
 test-verbose:
 	go test -v ./...
 
-# Run specific test suite
-test-webapp:
-	go test -v ./internal/app/webapp/tests
-
-# Run tests with coverage report
+# Run backend tests with coverage report
 test-coverage:
 	go test -cover ./...
 	
-# Run tests with coverage report and output to HTML
+# Run backend tests with coverage report and output to HTML
 test-coverage-html:
 	go test -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out
 
-# Run integration tests (requires running services)
-test-integration:
-	go test -v -tags=integration ./...
+#################################
+# Local Development
+#################################
 
-# System Administration Tool - Enhanced Management Commands
-.PHONY: build-system-admin system-help system-migration-status system-migration-up system-migration-down system-kafka-topics system-kafka-create-topic system-redis-status
+# Run individual services locally (without Docker)
+dev-authpost:
+	go run cmd/authpost/main.go
 
-# Build the System Administration tool
-build-system-admin:
-	@echo "Building System Administration tool..."
-	go build -o bin/system_admin cmd/system_admin/main.go
-	@echo "System admin tool built at bin/system_admin"
+dev-newsfeed:
+	go run cmd/newsfeed/main.go
 
-# System admin help
-system-help: build-system-admin
-	./bin/system_admin -config config.yaml -cmd help
+dev-webapp:
+	go run cmd/webapp/main.go
 
-# Database migration management (automated)
-system-migration-status: build-system-admin
-	@echo "Checking migration status..."
-	./bin/system_admin -config config.yaml -cmd migration-status
+dev-nfp:
+	go run cmd/newsfeed_publishing/main.go
 
-system-migration-up: build-system-admin
-	@echo "Running database migrations..."
-	./bin/system_admin -config config.yaml -cmd migration-up
+#################################
+# Documentation & Protobuf
+#################################
 
-system-migration-down: build-system-admin
-	@echo "Rolling back last migration..."
-	./bin/system_admin -config config.yaml -cmd migration-down
+# Generate API documentation
+docs:
+	swag init -g cmd/webapp/main.go --parseDependency --parseInternal --exclude .git,logs,personal --output docs
+	@echo "📚 Swagger documentation generated!"
+	@echo "JSON: http://localhost:19003/swagger/doc.json"
+	@echo "UI: http://localhost:19003/swagger/index.html"
 
-system-migration-reset: build-system-admin
-	@echo "DANGER: Resetting database..."
-	./bin/system_admin -config config.yaml -cmd migration-reset
+# Regenerate all protobuf files
+proto: 
+	chmod +x scripts/regenerate_protos.sh
+	./scripts/regenerate_protos.sh
 
-# Kafka topic management
-system-kafka-topics: build-system-admin
-	@echo "Listing Kafka topics..."
-	./bin/system_admin -config config.yaml -cmd kafka-topics -service newsfeed_publishing
+# Individual protobuf generation
+proto-authpost:
+	protoc --go_out=./pkg/types/proto/pb/authpost/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/authpost/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/authpost.proto 
 
-system-kafka-create-topic: build-system-admin
-	@echo "Creating Kafka topic (set TOPIC_NAME)..."
-	@if [ -z "$(TOPIC_NAME)" ]; then echo "Please set TOPIC_NAME: make system-kafka-create-topic TOPIC_NAME=my_topic"; exit 1; fi
-	./bin/system_admin -config config.yaml -cmd kafka-create-topic -service newsfeed_publishing -topic $(TOPIC_NAME)
+proto-newsfeed:
+	protoc --go_out=./pkg/types/proto/pb/newsfeed/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/newsfeed/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/newsfeed.proto 
 
-# Redis connection pool monitoring
-system-redis-status-webapp: build-system-admin
-	@echo "Checking Redis pool status for Web service..."
-	./bin/system_admin -config config.yaml -cmd redis-status -service webapp
+proto-nfp:
+	protoc --go_out=./pkg/types/proto/pb/newsfeed_publishing/ --go_opt=paths=source_relative --go-grpc_out=./pkg/types/proto/pb/newsfeed_publishing/ --go-grpc_opt=paths=source_relative ./pkg/types/proto/newsfeed_publishing.proto 
 
-system-redis-status-nfp: build-system-admin
-	@echo "Checking Redis pool status for Newsfeed Publishing service..."
-	./bin/system_admin -config config.yaml -cmd redis-status -service newsfeed_publishing
+#################################
+# Cleanup & Utilities
+#################################
 
-system-redis-status-newsfeed: build-system-admin
-	@echo "Checking Redis pool status for Newsfeed service..."
-	./bin/system_admin -config config.yaml -cmd redis-status -service newsfeed
+# Clean Docker artifacts
+clean:
+	@echo "🧹 Cleaning Docker artifacts..."
+	docker system prune -f
+	docker volume prune -f
+	@echo "✅ Cleanup completed"
 
-# System comprehensive health check (includes Redis pools and Kafka topics)
-system-health-check: build-system-admin
-	@echo "System Enhanced Health Check"
-	@echo "==============================="
-	@echo ""
-	@echo "Service Health:"
-	@$(MAKE) health_check
-	@echo ""
-	@echo "Database Migration Status:"
-	@$(MAKE) system-migration-status
-	@echo ""
-	@echo "Kafka Topics:"
-	@$(MAKE) system-kafka-topics || echo "❌ Kafka not available"
-	@echo ""
-	@echo "Redis Pool Status:"
-	@echo "Web Service:"
-	@$(MAKE) system-redis-status-webapp || echo "❌ Web Redis not available"
-	@echo "Newsfeed Publishing Service:"
-	@$(MAKE) system-redis-status-nfp || echo "❌ NFP Redis not available"
-	@echo "Newsfeed Service:"
-	@$(MAKE) system-redis-status-newsfeed || echo "❌ Newsfeed Redis not available"
+# Update Go dependencies
+deps:
+	go mod tidy
+	go mod vendor -v
 
-# Complete system setup (initializes everything)
-system-setup: build-system-admin
-	@echo "System Complete Setup"
-	@echo "========================"
-	@echo "1. Running database migrations..."
-	@$(MAKE) system-migration-up
-	@echo ""
-	@echo "2. Creating default Kafka topics..."
-	@$(MAKE) system-kafka-create-topic TOPIC_NAME=wander_sphere || echo "ℹ️  Topic may already exist"
-	@$(MAKE) system-kafka-create-topic TOPIC_NAME=wander_sphere_dlq || echo "ℹ️  DLQ topic may already exist"
-	@$(MAKE) system-kafka-create-topic TOPIC_NAME=wander_sphere_retry || echo "ℹ️  Retry topic may already exist"
-	@echo ""
-	@echo "3. Running comprehensive health check..."
-	@$(MAKE) system-health-check
-	@echo ""
-	@echo "✅ System setup completed!"
+#################################
+# Advanced Commands (for CI/CD and power users)
+#################################
 
-# System development workflow
-system-dev-start: system-setup
-	@echo "Starting system development environment..."
+# Build and start with fresh images
+rebuild:
+	@echo "🔨 Rebuilding and starting system..."
+	docker-compose --profile all up --build --force-recreate -d
+	@echo "✅ System rebuilt and started"
+
+# Run system in foreground (for debugging)
+run-fg:
 	docker-compose --profile all up
 
-# Clean system artifacts
-system-clean:
-	@echo "Cleaning system artifacts..."
-	rm -f bin/system_admin
-	@echo "System cleanup completed"
+# Show service logs
+logs:
+	docker-compose logs -f
 
-# Enhanced health checks (includes all system features)
-health_check_enhanced: system-health-check
+# Show logs for specific service
+logs-service:
+	@if [ -z "$(SERVICE)" ]; then echo "❌ Please specify SERVICE: make logs-service SERVICE=web"; exit 1; fi
+	docker-compose logs -f $(SERVICE)
+
+.PHONY: help start stop infra services migrate test-api health dev new-migration migrate-up migrate-down test test-integration test-all test-verbose test-coverage test-coverage-html dev-authpost dev-newsfeed dev-webapp dev-nfp docs proto proto-authpost proto-newsfeed proto-nfp clean deps rebuild run-fg logs logs-service

@@ -1,188 +1,411 @@
-[![GitHub Workflow Status (branch)](https://img.shields.io/github/workflow/status/golang-migrate/migrate/CI/master)](https://github.com/golang-migrate/migrate/actions/workflows/ci.yaml?query=branch%3Amaster)
-[![GoDoc](https://pkg.go.dev/badge/github.com/golang-migrate/migrate)](https://pkg.go.dev/github.com/golang-migrate/migrate/v4)
-[![Coverage Status](https://img.shields.io/coveralls/github/golang-migrate/migrate/master.svg)](https://coveralls.io/github/golang-migrate/migrate?branch=master)
-[![packagecloud.io](https://img.shields.io/badge/deb-packagecloud.io-844fec.svg)](https://packagecloud.io/golang-migrate/migrate?filter=debs)
-[![Docker Pulls](https://img.shields.io/docker/pulls/migrate/migrate.svg)](https://hub.docker.com/r/migrate/migrate/)
-![Supported Go Versions](https://img.shields.io/badge/Go-1.16%2C%201.17-lightgrey.svg)
-[![GitHub Release](https://img.shields.io/github/release/golang-migrate/migrate.svg)](https://github.com/golang-migrate/migrate/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/golang-migrate/migrate)](https://goreportcard.com/report/github.com/golang-migrate/migrate)
+# WanderSphere Backend
 
-# migrate
+A microservices-based social travel platform built with Go, featuring user authentication, post management, social features, and real-time newsfeed.
 
-__Database migrations written in Go. Use as [CLI](#cli-usage) or import as [library](#use-in-your-go-project).__
+## 🚀 Quick Start
 
-* Migrate reads migrations from [sources](#migration-sources)
-   and applies them in correct order to a [database](#databases).
-* Drivers are "dumb", migrate glues everything together and makes sure the logic is bulletproof.
-   (Keeps the drivers lightweight, too.)
-* Database drivers don't assume things or try to correct user input. When in doubt, fail.
-
-Forked from [mattes/migrate](https://github.com/mattes/migrate)
-
-## Databases
-
-Database drivers run migrations. [Add a new database?](database/driver.go)
-
-* [PostgreSQL](database/postgres)
-* [PGX](database/pgx)
-* [Redshift](database/redshift)
-* [Ql](database/ql)
-* [Cassandra](database/cassandra)
-* [SQLite](database/sqlite)
-* [SQLite3](database/sqlite3) ([todo #165](https://github.com/mattes/migrate/issues/165))
-* [SQLCipher](database/sqlcipher)
-* [MySQL/ MariaDB](database/mysql)
-* [Neo4j](database/neo4j)
-* [MongoDB](database/mongodb)
-* [CrateDB](database/crate) ([todo #170](https://github.com/mattes/migrate/issues/170))
-* [Shell](database/shell) ([todo #171](https://github.com/mattes/migrate/issues/171))
-* [Google Cloud Spanner](database/spanner)
-* [CockroachDB](database/cockroachdb)
-* [ClickHouse](database/clickhouse)
-* [Firebird](database/firebird)
-* [MS SQL Server](database/sqlserver)
-
-### Database URLs
-
-Database connection strings are specified via URLs. The URL format is driver dependent but generally has the form: `dbdriver://username:password@host:port/dbname?param1=true&param2=false`
-
-Any [reserved URL characters](https://en.wikipedia.org/wiki/Percent-encoding#Percent-encoding_reserved_characters) need to be escaped. Note, the `%` character also [needs to be escaped](https://en.wikipedia.org/wiki/Percent-encoding#Percent-encoding_the_percent_character)
-
-Explicitly, the following characters need to be escaped:
-`!`, `#`, `$`, `%`, `&`, `'`, `(`, `)`, `*`, `+`, `,`, `/`, `:`, `;`, `=`, `?`, `@`, `[`, `]`
-
-It's easiest to always run the URL parts of your DB connection URL (e.g. username, password, etc) through an URL encoder. See the example Python snippets below:
+Get the entire system running with just one command:
 
 ```bash
-$ python3 -c 'import urllib.parse; print(urllib.parse.quote(input("String to encode: "), ""))'
-String to encode: FAKEpassword!#$%&'()*+,/:;=?@[]
-FAKEpassword%21%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D
-$ python2 -c 'import urllib; print urllib.quote(raw_input("String to encode: "), "")'
-String to encode: FAKEpassword!#$%&'()*+,/:;=?@[]
-FAKEpassword%21%23%24%25%26%27%28%29%2A%2B%2C%2F%3A%3B%3D%3F%40%5B%5D
-$
+git clone <repository-url>
+cd backend
+make start
 ```
 
-## Migration Sources
+That's it! This will automatically:
+- Start all infrastructure services (PostgreSQL, Redis, Kafka)
+- Run database migrations
+- Start all application services  
+- Verify everything is working
 
-Source drivers read migrations from local or remote sources. [Add a new source?](source/driver.go)
+**🌐 Access Points:**
+- API: http://localhost:19003/api/v1
+- Swagger UI: http://localhost:19003/swagger/index.html
+- Health Check: `make health`
 
-* [Filesystem](source/file) - read from filesystem
-* [io/fs](source/iofs) - read from a Go [io/fs](https://pkg.go.dev/io/fs#FS)
-* [Go-Bindata](source/go_bindata) - read from embedded binary data ([jteeuwen/go-bindata](https://github.com/jteeuwen/go-bindata))
-* [pkger](source/pkger) - read from embedded binary data ([markbates/pkger](https://github.com/markbates/pkger))
-* [GitHub](source/github) - read from remote GitHub repositories
-* [GitHub Enterprise](source/github_ee) - read from remote GitHub Enterprise repositories
-* [Bitbucket](source/bitbucket) - read from remote Bitbucket repositories
-* [Gitlab](source/gitlab) - read from remote Gitlab repositories
-* [AWS S3](source/aws_s3) - read from Amazon Web Services S3
-* [Google Cloud Storage](source/google_cloud_storage) - read from Google Cloud Platform Storage
+## 📋 Prerequisites
 
-## CLI usage
+Before you begin, ensure you have:
 
-* Simple wrapper around this library.
-* Handles ctrl+c (SIGINT) gracefully.
-* No config search paths, no config files, no magic ENV var injections.
-
-__[CLI Documentation](cmd/migrate)__
-
-### Basic usage
+- **Docker & Docker Compose** - For running services
+- **Go 1.19+** - For development and testing
+- **migrate CLI** - For database migrations
 
 ```bash
-$ migrate -source file://path/to/migrations -database postgres://localhost:5432/database up 2
+# Install migrate CLI (Linux)
+curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
+sudo mv migrate /usr/local/bin/
 ```
 
-### Docker usage
+## 🏗️ Architecture
+
+WanderSphere consists of 4 microservices and supporting infrastructure:
+
+### Microservices
+| Service | Port | Health Check | Description |
+|---------|------|--------------|-------------|
+| **Web API** | 19003 | :19103/health | Main REST API gateway |
+| **AuthPost** | 19001 | :19101/health | Authentication & Posts |
+| **Newsfeed** | 19002 | :19102/health | Timeline & Social Features |
+| **Newsfeed Publishing** | 19004 | :19104/health | Event Processing |
+
+### Infrastructure
+- **PostgreSQL**: Port 5434 - Primary database
+- **Redis**: Port 6379 - Caching and sessions  
+- **Kafka**: Port 9092 - Event streaming
+
+## 📚 Commands Reference
+
+Run `make help` to see all available commands.
+
+### 🚀 Essential Commands
 
 ```bash
-$ docker run -v {{ migration dir }}:/migrations --network host migrate/migrate
-    -path=/migrations/ -database postgres://localhost:5432/database up 2
+make start      # Start the entire system from scratch
+make stop       # Stop the entire system
+make health     # Check if all services are healthy
+make test-api   # Run comprehensive API tests
+make dev        # Development mode (keeps services running)
 ```
 
-## Use in your Go project
-
-* API is stable and frozen for this release (v3 & v4).
-* Uses [Go modules](https://golang.org/cmd/go/#hdr-Modules__module_versions__and_more) to manage dependencies.
-* To help prevent database corruptions, it supports graceful stops via `GracefulStop chan bool`.
-* Bring your own logger.
-* Uses `io.Reader` streams internally for low memory overhead.
-* Thread-safe and no goroutine leaks.
-
-__[Go Documentation](https://godoc.org/github.com/golang-migrate/migrate)__
-
-```go
-import (
-    "github.com/golang-migrate/migrate/v4"
-    _ "github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/github"
-)
-
-func main() {
-    m, err := migrate.New(
-        "github://mattes:personal-access-token@mattes/migrate_test",
-        "postgres://localhost:5432/database?sslmode=enable")
-    m.Steps(2)
-}
-```
-
-Want to use an existing database client?
-
-```go
-import (
-    "database/sql"
-    _ "github.com/lib/pq"
-    "github.com/golang-migrate/migrate/v4"
-    "github.com/golang-migrate/migrate/v4/database/postgres"
-    _ "github.com/golang-migrate/migrate/v4/source/file"
-)
-
-func main() {
-    db, err := sql.Open("postgres", "postgres://localhost:5432/database?sslmode=enable")
-    driver, err := postgres.WithInstance(db, &postgres.Config{})
-    m, err := migrate.NewWithDatabaseInstance(
-        "file:///migrations",
-        "postgres", driver)
-    m.Up() // or m.Step(2) if you want to explicitly set the number of migrations to run
-}
-```
-
-## Getting started
-
-Go to [getting started](GETTING_STARTED.md)
-
-## Tutorials
-
-* [CockroachDB](database/cockroachdb/TUTORIAL.md)
-* [PostgreSQL](database/postgres/TUTORIAL.md)
-
-(more tutorials to come)
-
-## Migration files
-
-Each migration has an up and down migration. [Why?](FAQ.md#why-two-separate-files-up-and-down-for-a-migration)
+### ⚙️ Step-by-step Commands
 
 ```bash
-1481574547_create_users_table.up.sql
-1481574547_create_users_table.down.sql
+make infra      # Start infrastructure services (postgres, redis, kafka)
+make migrate    # Run database migrations
+make services   # Start application services
 ```
 
-[Best practices: How to write migrations.](MIGRATIONS.md)
+### 🧪 Testing Commands
 
-## Versions
+```bash
+make test               # Run unit tests
+make test-verbose       # Verbose unit tests
+make test-coverage      # With coverage report
+make test-coverage-html # Generate HTML coverage report
+```
 
-Version | Supported? | Import | Notes
---------|------------|--------|------
-**master** | :white_check_mark: | `import "github.com/golang-migrate/migrate/v4"` | New features and bug fixes arrive here first |
-**v4** | :white_check_mark: | `import "github.com/golang-migrate/migrate/v4"` | Used for stable releases |
-**v3** | :x: | `import "github.com/golang-migrate/migrate"` (with package manager) or `import "gopkg.in/golang-migrate/migrate.v3"` (not recommended) | **DO NOT USE** - No longer supported |
+### 📊 Database Commands
 
-## Development and Contributing
+```bash
+make new-migration MESSAGE_NAME=create_users_table  # Create new migration
+make migrate-up         # Run migrations manually
+make migrate-down       # Rollback migrations
+```
 
-Yes, please! [`Makefile`](Makefile) is your friend,
-read the [development guide](CONTRIBUTING.md).
+### 🛠️ Development Commands
 
-Also have a look at the [FAQ](FAQ.md).
+```bash
+# Run individual services locally (without Docker)
+make dev-authpost       # Run AuthPost service
+make dev-newsfeed       # Run Newsfeed service  
+make dev-webapp         # Run Web API service
+make dev-nfp           # Run NFP service
 
----
+# Documentation and code generation
+make docs              # Generate API documentation
+make proto             # Regenerate all protobuf files
+make proto-authpost    # Generate AuthPost protobuf
+make proto-newsfeed    # Generate Newsfeed protobuf  
+make proto-nfp         # Generate NFP protobuf
 
-Looking for alternatives? [https://awesome-go.com/#database](https://awesome-go.com/#database).
+# Utilities
+make clean             # Clean Docker artifacts
+make deps              # Update Go dependencies
+```
+
+### 🔧 Advanced Commands
+
+```bash
+make rebuild           # Rebuild and start with fresh images
+make run-fg           # Run system in foreground (for debugging)
+make logs             # Show all service logs
+make logs-service SERVICE=web  # Show specific service logs
+```
+
+## 🧪 Testing
+
+### Automated Testing
+
+The `make test-api` command runs a comprehensive test suite via `tests/run_tests.sh` that:
+
+```bash
+# Run full API test suite
+make test-api
+
+# Keep services running for manual testing afterward
+KEEP_RUNNING=true make test-api
+```
+
+The test script will:
+1. Start all services automatically using `make infra`, `make migrate`, `make services`
+2. Run database migrations
+3. Test authentication endpoints (TestUser)
+4. Test post management (TestCreate)
+5. Test social features (TestFollow)
+6. Test newsfeed functionality (TestNewsfeed)
+7. Run integration tests (TestComplete)
+8. Generate test reports
+
+### Manual Testing
+
+1. Start the system: `make start`
+2. Open Swagger UI: http://localhost:19003/swagger/index.html
+3. Test endpoints interactively
+
+### Unit Tests
+
+```bash
+make test               # Run backend unit tests with: go test ./...
+make test-integration   # Run integration tests in tests/ folder  
+make test-all          # Run all tests (unit + integration)
+make test-verbose       # Verbose output with: go test -v ./...
+make test-coverage      # Coverage report with: go test -cover ./...
+make test-coverage-html # Generate HTML coverage report
+```
+
+## 🐳 Docker Management
+
+### Service Profiles
+
+Start specific service groups:
+
+```bash
+# Infrastructure only
+docker-compose --profile infra up
+
+# Specific services  
+docker-compose --profile web up        # Web API only
+docker-compose --profile aap up        # AuthPost only
+docker-compose --profile newsfeed up   # Newsfeed only
+docker-compose --profile nfp up        # Publishing only
+
+# Everything
+docker-compose --profile all up
+```
+
+### Cleanup
+
+```bash
+make stop        # Stop and remove all containers/volumes
+make clean       # Clean Docker artifacts
+```
+
+## 📊 Monitoring & Health Checks
+
+### Quick Health Check
+
+```bash
+make health
+```
+
+Output example:
+```
+🏥 Checking service health...
+AuthPost (19101): ✅ OK
+Newsfeed (19102): ✅ OK  
+Web API (19103): ✅ OK
+NFP (19104): ✅ OK
+```
+
+### Individual Service Health
+
+```bash
+curl http://localhost:19101/health  # AuthPost
+curl http://localhost:19102/health  # Newsfeed
+curl http://localhost:19103/health  # Web API
+curl http://localhost:19104/health  # Publishing
+```
+
+### Viewing Logs
+
+```bash
+make logs                           # All services
+make logs-service SERVICE=web       # Specific service
+docker-compose logs -f postgres     # Infrastructure service
+```
+
+## 🔧 Configuration
+
+### Environment Configuration
+
+Key settings are in `config.yaml`:
+
+```yaml
+database:
+  host: localhost
+  port: 5434
+  name: wander_sphere
+  user: postgres
+  password: 123456
+
+redis:
+  host: localhost
+  port: 6379
+
+kafka:
+  brokers: ["localhost:9092"]
+```
+
+### Service Ports
+
+- **Application Services**: 19001-19004
+- **Health Check Endpoints**: 19101-19104  
+- **Main API**: 19003
+- **Database**: 5434 (PostgreSQL)
+- **Cache**: 6379 (Redis)
+- **Messaging**: 9092 (Kafka)
+
+## 🔄 Development Workflow
+
+### Adding New Features
+
+1. **Create database migration:**
+   ```bash
+   make new-migration MESSAGE_NAME=add_user_profiles
+   ```
+
+2. **Update protobuf definitions:**
+   ```bash
+   # Edit .proto files in pkg/types/proto/
+   make proto
+   ```
+
+3. **Implement service logic**
+
+4. **Test your changes:**
+   ```bash
+   make test-api
+   ```
+
+5. **Update documentation:**
+   ```bash
+   make docs
+   ```
+
+### Code Generation
+
+```bash
+make proto              # Regenerate all protobuf files
+make proto-authpost     # Individual service protos
+make docs              # Generate Swagger documentation
+```
+
+### Local Development
+
+```bash
+# Run services locally (outside Docker)
+make dev-webapp         # Start web service locally
+make dev-authpost       # Start auth service locally
+
+# Or use development mode with Docker
+make dev               # All services in Docker with auto-restart
+```
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+**Services not starting:**
+```bash
+# Check Docker resources
+docker system df
+docker system prune
+
+# Check service logs
+make logs-service SERVICE=postgres
+make logs-service SERVICE=redis
+```
+
+**Database migration failures:**
+```bash
+# Check database connection
+docker-compose exec postgres psql -U postgres -d wander_sphere -c "\l"
+
+# Reset database (⚠️ DESTROYS DATA)
+make stop
+docker volume rm backend_postgres_data
+make start
+```
+
+**Port conflicts:**
+```bash
+# Check what's using the ports
+sudo netstat -tulpn | grep :5434
+sudo netstat -tulpn | grep :6379
+
+# Stop conflicting services
+sudo systemctl stop postgresql
+sudo systemctl stop redis
+```
+
+### Complete System Reset
+
+If you need to start completely fresh:
+
+```bash
+make stop
+docker system prune -a --volumes
+make start
+```
+
+### Getting Help
+
+```bash
+make help              # Show all available commands
+make logs              # Check service logs
+make health            # Verify service status
+```
+
+## 📈 Production Considerations
+
+### Security Checklist
+
+- [ ] Change default passwords in `config.yaml`
+- [ ] Use environment variables for secrets
+- [ ] Enable PostgreSQL SSL in production
+- [ ] Configure Redis AUTH
+- [ ] Set up Kafka SASL/SSL
+- [ ] Enable HTTPS for API endpoints
+
+### Performance & Scaling
+
+- [ ] Configure connection pooling
+- [ ] Set up Redis clustering
+- [ ] Configure PostgreSQL read replicas
+- [ ] Use Kafka partitioning for load distribution
+- [ ] Implement horizontal service scaling
+
+### Monitoring & Logging
+
+- [ ] Integrate Prometheus/Grafana
+- [ ] Set up centralized logging (ELK stack)
+- [ ] Configure alerting for service failures
+- [ ] Monitor database performance
+- [ ] Track Kafka consumer lag
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Run the test suite: `make test-api`
+5. Commit your changes: `git commit -m 'Add amazing feature'`
+6. Push to the branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
+
+### Development Setup
+
+```bash
+# Clone and setup
+git clone <your-fork-url>
+cd backend
+make start
+
+# Make changes and test
+make test-api
+make test
+
+# Generate docs if API changed
+make docs
+```

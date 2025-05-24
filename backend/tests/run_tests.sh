@@ -81,7 +81,7 @@ BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Cleanup function
 cleanup() {
     log_info "Cleaning up test environment..."
-    cd "$BACKEND_DIR" && docker-compose down --volumes --remove-orphans >/dev/null 2>&1 || true
+    cd "$BACKEND_DIR" && make stop >/dev/null 2>&1 || true
 }
 
 # Trap cleanup on exit
@@ -98,18 +98,14 @@ echo "------------------------------------"
 # Clean previous state
 cleanup
 
-# Start infrastructure services first
+# Start infrastructure services using Makefile
 log_info "Starting infrastructure services..."
-if ! (cd "$BACKEND_DIR" && docker-compose --profile infra up -d); then
+if ! (cd "$BACKEND_DIR" && make infra); then
     log_error "Failed to start infrastructure services"
     exit 1
 fi
 
-# Wait longer for infrastructure
-log_info "Waiting for infrastructure services to be ready..."
-sleep 30
-
-# Check infrastructure
+# Check infrastructure services
 if ! check_service "postgres" 5434; then 
     log_error "Postgres failed to start, checking logs..."
     cd "$BACKEND_DIR" && docker-compose logs postgres
@@ -126,30 +122,25 @@ if ! check_service "kafka" 9092; then
     exit 1
 fi
 
-# Start application services
+# Run database migrations using Makefile
+log_info "Running database migrations..."
+if ! (cd "$BACKEND_DIR" && make migrate); then
+    log_error "Database migrations failed"
+    exit 1
+fi
+
+# Start application services using Makefile
 log_info "Starting application services..."
-if ! (cd "$BACKEND_DIR" && docker-compose --profile all up -d); then
+if ! (cd "$BACKEND_DIR" && make services); then
     log_error "Failed to start application services"
     exit 1
 fi
 
-# Wait for application services
-log_info "Waiting for application services to start..."
-sleep 45
-
-# Check application services with more tolerance
+# Check application services using Makefile health check
 log_info "Checking application services..."
-check_service "authpost" 19001 || log_warning "AuthPost gRPC service may not be ready"
-check_service "newsfeed" 19002 || log_warning "Newsfeed gRPC service may not be ready"
-check_service "web" 19003 || log_warning "Web service may not be ready"
-check_service "nfp" 19004 || log_warning "NFP gRPC service may not be ready"
-
-# Check health endpoints with tolerance for missing endpoints
-log_info "Verifying health endpoints..."
-curl -s --max-time 5 http://localhost:19101/health >/dev/null && log_success "AuthPost health check OK" || log_warning "AuthPost health check failed"
-curl -s --max-time 5 http://localhost:19102/health >/dev/null && log_success "Newsfeed health check OK" || log_warning "Newsfeed health check failed"
-curl -s --max-time 5 http://localhost:19103/health >/dev/null && log_success "Web health check OK" || log_warning "Web health check failed"
-curl -s --max-time 5 http://localhost:19104/health >/dev/null && log_success "NFP health check OK" || log_warning "NFP health check failed"
+if ! (cd "$BACKEND_DIR" && make health); then
+    log_warning "Some services may not be responding properly"
+fi
 
 echo ""
 
@@ -188,13 +179,6 @@ go mod tidy
 # Clear Go test cache to avoid stale results
 log_info "Clearing Go test cache..."
 go clean -testcache
-
-# Ensure database is properly migrated before running tests
-log_info "Running database migrations to ensure proper schema..."
-(cd "$BACKEND_DIR" && migrate -path migrations/ -database "postgresql://postgres:123456@localhost:5434/wander_sphere?sslmode=disable" -verbose up) || log_warning "Migration may have failed"
-
-# Wait a moment for migrations to complete
-sleep 5
 
 # Track test results
 TEST_RESULTS=()
@@ -293,7 +277,7 @@ echo "$OVERALL_STATUS"
 # Optional: Keep services running for manual testing
 if [[ "${KEEP_RUNNING:-false}" == "true" ]]; then
     log_info "Services will keep running for manual testing."
-    log_info "To stop services: docker-compose down"
+    log_info "To stop services: make stop"
     log_info "API Base URL: $API_BASE_URL"
 else
     log_info "Stopping services..."
