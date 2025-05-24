@@ -22,6 +22,17 @@ type RedisConfig struct {
 	DB       int    `yaml:"db"`
 }
 
+// S3Config represents the configuration for S3 storage
+type S3Config struct {
+	AccessKeyID     string `yaml:"access_key_id"`
+	SecretAccessKey string `yaml:"secret_access_key"`
+	Region          string `yaml:"region"`
+	Bucket          string `yaml:"bucket"`
+	Endpoint        string `yaml:"endpoint"`
+	DisableSSL      bool   `yaml:"disable_ssl"`
+	ForcePathStyle  bool   `yaml:"force_path_style"`
+}
+
 // KafkaConfig represents Kafka configuration
 type KafkaConfig struct {
 	Topic   string   `yaml:"topic"`
@@ -98,6 +109,7 @@ type WebConfig struct {
 	Newsfeed            HostConfig   `yaml:"newsfeed"`
 	NewsfeedPublishing  HostConfig   `yaml:"newsfeed_publishing"`
 	Redis               RedisConfig  `yaml:"redis"`
+	S3                  S3Config     `yaml:"s3"`
 	Auth                AuthConfig   `yaml:"auth"`
 }
 

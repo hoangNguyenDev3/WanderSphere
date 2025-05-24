@@ -104,7 +104,7 @@ health:
 	@echo "🏥 Checking service health..."
 	@echo -n "AuthPost (19101): " && curl -s --max-time 3 http://localhost:19101/health >/dev/null && echo "✅ OK" || echo "❌ Down"
 	@echo -n "Newsfeed (19102): " && curl -s --max-time 3 http://localhost:19102/health >/dev/null && echo "✅ OK" || echo "❌ Down"
-	@echo -n "Web API (19103): " && curl -s --max-time 3 http://localhost:19103/health >/dev/null && echo "✅ OK" || echo "❌ Down"
+	@echo -n "Web API (19003): " && curl -s --max-time 3 http://localhost:19003/health >/dev/null && echo "✅ OK" || echo "❌ Down"
 	@echo -n "NFP (19104): " && curl -s --max-time 3 http://localhost:19104/health >/dev/null && echo "✅ OK" || echo "❌ Down"
 
 # Development mode - keeps services running for manual testing
