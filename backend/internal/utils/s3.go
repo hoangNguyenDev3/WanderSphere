@@ -199,6 +199,31 @@ func (s *S3Service) GeneratePresignedURL(key string, expiration time.Duration) (
 	return url, nil
 }
 
+// GeneratePresignedPutURL generates a presigned URL for uploading a file
+func (s *S3Service) GeneratePresignedPutURL(key string, contentType string, expiration time.Duration) (string, error) {
+	req, _ := s.client.PutObjectRequest(&s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+	})
+
+	url, err := req.Presign(expiration)
+	if err != nil {
+		s.logger.Error("Failed to generate presigned PUT URL",
+			zap.String("key", key),
+			zap.String("contentType", contentType),
+			zap.Error(err))
+		return "", fmt.Errorf("failed to generate presigned PUT URL: %w", err)
+	}
+
+	s.logger.Info("Generated presigned PUT URL",
+		zap.String("key", key),
+		zap.String("contentType", contentType),
+		zap.Duration("expiration", expiration))
+
+	return url, nil
+}
+
 // ListFiles lists files in the S3 bucket with optional prefix
 func (s *S3Service) ListFiles(prefix string, maxKeys int64) ([]string, error) {
 	if maxKeys <= 0 {

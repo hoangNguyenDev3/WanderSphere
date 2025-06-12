@@ -145,12 +145,14 @@ func (s *AuthenticateAndPostService) GetUserDetailInfo(ctx context.Context, req 
 	return &pb.GetUserDetailInfoResponse{
 		Status: pb.GetUserDetailInfoResponse_OK,
 		User: &pb.UserDetailInfo{
-			UserId:      user.ID,
-			UserName:    user.UserName,
-			FirstName:   user.FirstName,
-			LastName:    user.LastName,
-			DateOfBirth: timestamppb.New(user.DateOfBirth),
-			Email:       user.Email,
+			UserId:         user.ID,
+			UserName:       user.UserName,
+			FirstName:      user.FirstName,
+			LastName:       user.LastName,
+			DateOfBirth:    timestamppb.New(user.DateOfBirth),
+			Email:          user.Email,
+			ProfilePicture: user.ProfilePicture,
+			CoverPicture:   user.CoverPicture,
 		},
 	}, nil
 }
@@ -186,6 +188,12 @@ func (s *AuthenticateAndPostService) EditUser(ctx context.Context, req *pb.EditU
 	}
 	if req.DateOfBirth != nil {
 		user.DateOfBirth = req.DateOfBirth.AsTime()
+	}
+	if req.ProfilePicture != nil {
+		user.ProfilePicture = *req.ProfilePicture
+	}
+	if req.CoverPicture != nil {
+		user.CoverPicture = *req.CoverPicture
 	}
 	if req.UserPassword != nil {
 		salt, err := auth.GenerateRandomSalt()

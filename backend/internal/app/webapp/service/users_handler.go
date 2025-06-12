@@ -155,8 +155,8 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 				LastName:       userInfo.GetUser().GetLastName(),
 				DateOfBirth:    userInfo.GetUser().GetDateOfBirth().AsTime().Format(time.DateOnly),
 				Email:          userInfo.GetUser().GetEmail(),
-				ProfilePicture: "",
-				CoverPicture:   "",
+				ProfilePicture: userInfo.GetUser().GetProfilePicture(),
+				CoverPicture:   userInfo.GetUser().GetCoverPicture(),
 			},
 		})
 		return
@@ -283,17 +283,24 @@ func (svc *WebService) EditUser(ctx *gin.Context) {
 		dateOfBirth = timestamppb.New(dob)
 	}
 
-	// These are declared but not used currently until the proto is updated
-	_ = jsonRequest.ProfilePicture
-	_ = jsonRequest.CoverPicture
+	var profilePicture *string
+	if jsonRequest.ProfilePicture != "" {
+		profilePicture = &jsonRequest.ProfilePicture
+	}
+	var coverPicture *string
+	if jsonRequest.CoverPicture != "" {
+		coverPicture = &jsonRequest.CoverPicture
+	}
 
 	// Call EditUser service
 	resp, err := svc.AuthenticateAndPostClient.EditUser(ctx, &pb_aap.EditUserRequest{
-		UserId:       int64(userId),
-		UserPassword: password,
-		FirstName:    firstName,
-		LastName:     lastName,
-		DateOfBirth:  dateOfBirth,
+		UserId:         int64(userId),
+		UserPassword:   password,
+		FirstName:      firstName,
+		LastName:       lastName,
+		DateOfBirth:    dateOfBirth,
+		ProfilePicture: profilePicture,
+		CoverPicture:   coverPicture,
 	})
 	if err != nil {
 		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
@@ -349,8 +356,8 @@ func (svc *WebService) GetUserDetailInfo(ctx *gin.Context) {
 			LastName:       resp.GetUser().GetLastName(),
 			DateOfBirth:    resp.GetUser().GetDateOfBirth().AsTime().Format(time.DateOnly),
 			Email:          resp.GetUser().GetEmail(),
-			ProfilePicture: "",
-			CoverPicture:   "",
+			ProfilePicture: resp.GetUser().GetProfilePicture(),
+			CoverPicture:   resp.GetUser().GetCoverPicture(),
 		})
 		return
 	} else {

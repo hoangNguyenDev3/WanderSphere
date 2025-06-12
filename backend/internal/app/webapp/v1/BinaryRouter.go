@@ -7,23 +7,30 @@ import (
 
 func AddBinaryRouter(r *gin.RouterGroup, webService *service.WebService) {
 	binaryGroup := r.Group("/binaries")
+
+	// Protected routes (authentication required)
+	authGroup := binaryGroup.Group("")
+	authGroup.Use(webService.AuthRequired())
 	{
 		// Upload binary file
-		binaryGroup.POST("/upload", webService.UploadBinary)
+		authGroup.POST("/upload", webService.UploadBinary)
 
-		// Download binary file
-		binaryGroup.GET("/:key", webService.DownloadBinary)
+		// Generate download URL
+		authGroup.GET("/:key/download-url", webService.GenerateBinaryDownloadURL)
 
+		// List binary files
+		authGroup.GET("/", webService.ListBinaries)
+
+		// Delete binary file
+		authGroup.DELETE("/:key", webService.DeleteBinary)
+	}
+
+	// Public routes (no authentication required)
+	{
 		// Get binary file info
 		binaryGroup.GET("/:key/info", webService.GetBinaryInfo)
 
-		// Generate download URL
-		binaryGroup.GET("/:key/download-url", webService.GenerateBinaryDownloadURL)
-
-		// List binary files
-		binaryGroup.GET("/", webService.ListBinaries)
-
-		// Delete binary file
-		binaryGroup.DELETE("/:key", webService.DeleteBinary)
+		// Download binary file (single parameter)
+		binaryGroup.GET("/:key", webService.DownloadBinary)
 	}
 }

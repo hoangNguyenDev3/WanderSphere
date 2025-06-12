@@ -22,6 +22,8 @@ type User struct {
 	DateOfBirth    time.Time `json:"date_of_birth" gorm:"column:date_of_birth;not null"`
 	Email          string    `json:"email" gorm:"column:email;size:100;not null"`
 	UserName       string    `json:"user_name" gorm:"column:user_name;size:50;unique;not null"`
+	ProfilePicture string    `json:"profile_picture" gorm:"column:profile_picture;size:1000"`
+	CoverPicture   string    `json:"cover_picture" gorm:"column:cover_picture;size:1000"`
 	Posts          []*Post   `json:"-" gorm:"foreignKey:UserID"`
 	// Followers: Users who follow this user (this user's ID is user_id, followers' IDs are follower_id)
 	Followers []*User `json:"-" gorm:"many2many:following;joinForeignKey:user_id;joinReferences:follower_id"`

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -52,11 +53,15 @@ func (ws *WebService) UploadBinary(c *gin.Context) {
 		zap.String("filename", header.Filename),
 		zap.Int64("size", result.Size))
 
+	// Generate a simple base64-encoded key for the URL to avoid routing issues
+	encodedKey := base64.URLEncoding.EncodeToString([]byte(result.Key))
+	downloadURL := fmt.Sprintf("/api/v1/binaries/%s", encodedKey)
+
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": gin.H{
 			"key":          result.Key,
-			"url":          result.URL,
+			"url":          downloadURL,
 			"size":         result.Size,
 			"content_type": result.ContentType,
 			"uploaded_at":  result.UploadedAt,
@@ -72,13 +77,18 @@ func (ws *WebService) DownloadBinary(c *gin.Context) {
 		return
 	}
 
-	// Decode the key in case it's URL encoded
-	decodedKey, err := url.QueryUnescape(key)
+	ws.Logger.Info("Download request received", zap.String("raw_key", key))
+
+	// Decode the base64-encoded key
+	decodedKeyBytes, err := base64.URLEncoding.DecodeString(key)
 	if err != nil {
 		ws.Logger.Error("Failed to decode file key", zap.String("key", key), zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid file key"})
 		return
 	}
+	decodedKey := string(decodedKeyBytes)
+
+	ws.Logger.Info("Using decoded key", zap.String("decoded_key", decodedKey))
 
 	// Download from storage
 	data, err := ws.BinaryStorage.DownloadBinary(decodedKey)

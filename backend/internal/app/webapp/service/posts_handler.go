@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/hoangNguyenDev3/WanderSphere/backend/docs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
+	"go.uber.org/zap"
 
 	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 )
@@ -475,25 +476,29 @@ func (svc *WebService) GetS3PresignedUrl(ctx *gin.Context) {
 		return
 	}
 
-	// Development mock S3 service
-	// In production, this would use AWS SDK to generate actual presigned URLs
-	if svc.isDevelopmentMode() {
-		expirationTime := time.Now().Add(15 * time.Minute)
-		mockURL := fmt.Sprintf("https://wandersphere-dev-bucket.s3.amazonaws.com/uploads/user_%d/%s?signature=mock_dev_signature",
-			userId, fileName)
+	// Generate a unique key for the file
+	uniqueKey := fmt.Sprintf("uploads/user_%d/%d_%s", userId, time.Now().Unix(), fileName)
 
-		ctx.JSON(http.StatusOK, types.GetS3PresignedUrlResponse{
-			URL:            mockURL,
-			ExpirationTime: expirationTime.Format(time.RFC3339),
+	// Generate presigned URL for PUT operation using the actual S3 service
+	presignedURL, err := svc.generatePresignedPutURL(uniqueKey, fileType, 15*time.Minute)
+	if err != nil {
+		svc.Logger.Error("Failed to generate presigned URL", zap.Error(err))
+		ctx.JSON(http.StatusInternalServerError, types.MessageResponse{
+			Message: "Failed to generate upload URL",
 		})
 		return
 	}
 
-	// TODO: Implement production S3 presigned URL generation
-	// This would typically involve using the AWS SDK to generate a presigned URL
-	ctx.JSON(http.StatusServiceUnavailable, types.MessageResponse{
-		Message: "S3 service not configured for production use",
+	expirationTime := time.Now().Add(15 * time.Minute)
+	ctx.JSON(http.StatusOK, types.GetS3PresignedUrlResponse{
+		URL:            presignedURL,
+		ExpirationTime: expirationTime.Format(time.RFC3339),
 	})
+}
+
+// generatePresignedPutURL generates a presigned URL for PUT operations (uploads)
+func (svc *WebService) generatePresignedPutURL(key string, contentType string, expiration time.Duration) (string, error) {
+	return svc.BinaryStorage.GenerateUploadURL(key, contentType, expiration)
 }
 
 // isDevelopmentMode checks if the service is running in development mode

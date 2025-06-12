@@ -112,6 +112,22 @@ func validateURL(fl validator.FieldLevel) bool {
 		return true
 	}
 
+	// Allow relative URLs for binary downloads
+	if urlStr[0] == '/' && len(urlStr) > 1 {
+		// Check if it's a valid relative URL for binaries
+		binaryPattern := `^/api/v1/binaries/.*`
+		binaryRegex, err := regexp.Compile(binaryPattern)
+		if err == nil && binaryRegex.MatchString(urlStr) {
+			return true
+		}
+		// Allow other relative URLs as well
+		relativePattern := `^/[a-zA-Z0-9/_.-]*$`
+		relativeRegex, err := regexp.Compile(relativePattern)
+		if err == nil && relativeRegex.MatchString(urlStr) {
+			return true
+		}
+	}
+
 	// Check for common URL patterns that are valid for development/testing
 	urlPattern := `^https?://[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(/.*)?$`
 	urlRegex, err := regexp.Compile(urlPattern)

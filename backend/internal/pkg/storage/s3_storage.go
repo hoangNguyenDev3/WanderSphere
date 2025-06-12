@@ -16,6 +16,7 @@ type BinaryStorage interface {
 	DeleteBinary(key string) error
 	GetBinaryInfo(key string) (*BinaryInfo, error)
 	GenerateDownloadURL(key string, expiration time.Duration) (string, error)
+	GenerateUploadURL(key string, contentType string, expiration time.Duration) (string, error)
 	ListBinaries(prefix string, limit int) ([]string, error)
 }
 
@@ -128,6 +129,21 @@ func (s *S3BinaryStorage) GenerateDownloadURL(key string, expiration time.Durati
 	url, err := s.s3Service.GeneratePresignedURL(key, expiration)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate download URL: %w", err)
+	}
+
+	return url, nil
+}
+
+// GenerateUploadURL generates a presigned URL for uploading a binary
+func (s *S3BinaryStorage) GenerateUploadURL(key string, contentType string, expiration time.Duration) (string, error) {
+	s.logger.Info("Generating upload URL for binary",
+		zap.String("key", key),
+		zap.String("contentType", contentType),
+		zap.Duration("expiration", expiration))
+
+	url, err := s.s3Service.GeneratePresignedPutURL(key, contentType, expiration)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate upload URL: %w", err)
 	}
 
 	return url, nil
