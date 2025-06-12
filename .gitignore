@@ -47,3 +47,6 @@ temp/
 # IDE files
 .vscode/
 .idea/
+
+# Frontend 
+frontend/node_modules/

@@ -1,0 +1,234 @@
+version: '3.8'
+
+services:
+  # Frontend React Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    image: wandersphere-frontend
+    container_name: wandersphere-frontend
+    ports:
+      - "5008:80"
+    depends_on:
+      - backend
+    networks:
+      - wandersphere-network
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+
+  # Backend Go Application (Main Web API)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: cmd/webapp/Dockerfile
+      target: test_env
+    image: wandersphere-backend
+    container_name: wandersphere-backend
+    ports:
+      - "19003:19003"
+    depends_on:
+      - postgres
+      - redis
+      - minio
+      - aap
+      - newsfeed
+    networks:
+      - wandersphere-network
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml
+    restart: unless-stopped
+    environment:
+      - GO_ENV=production
+
+  # Authentication and Posts Service
+  aap:
+    build:
+      context: ./backend
+      dockerfile: cmd/authpost/Dockerfile
+      target: test_env
+    image: wandersphere-aap
+    container_name: wandersphere-aap
+    ports:
+      - "19001:19001"
+      - "19101:19101"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wandersphere-network
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml
+    restart: unless-stopped
+
+  # Newsfeed Service
+  newsfeed:
+    build:
+      context: ./backend
+      dockerfile: cmd/newsfeed/Dockerfile
+      target: test_env
+    image: wandersphere-newsfeed
+    container_name: wandersphere-newsfeed
+    ports:
+      - "19002:19002"
+      - "19102:19102"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - wandersphere-network
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml
+    restart: unless-stopped
+
+  # Newsfeed Publishing Service
+  newsfeed_publishing:
+    build:
+      context: ./backend
+      dockerfile: cmd/newsfeed_publishing/Dockerfile
+      target: test_env
+    image: wandersphere-newsfeed-publishing
+    container_name: wandersphere-newsfeed-publishing
+    ports:
+      - "19004:19004"
+      - "19104:19104"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    networks:
+      - wandersphere-network
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml
+    restart: unless-stopped
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: wandersphere-postgres
+    environment:
+      POSTGRES_DB: wander_sphere
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/postgres/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./backend/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
+    networks:
+      - wandersphere-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: wandersphere-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - wandersphere-network
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    command: redis-server --appendonly yes
+
+  # MinIO S3-compatible Object Storage
+  minio:
+    image: minio/minio:latest
+    container_name: wandersphere-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    ports:
+      - "9000:9000" # API endpoint
+      - "9001:9001" # Console UI
+    volumes:
+      - minio_data:/data
+    networks:
+      - wandersphere-network
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Kafka (Optional - for event streaming)
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: wandersphere-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 0
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    networks:
+      - wandersphere-network
+    restart: unless-stopped
+    healthcheck:
+      test: kafka-topics --bootstrap-server kafka:9092 --list || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    # profiles: [ "kafka" ] # Making Kafka required for newsfeed functionality
+
+    # Zookeeper (Required by Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: wandersphere-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - wandersphere-network
+    restart: unless-stopped
+    # profiles: [ "kafka" ] # Making Zookeeper required for Kafka functionality
+
+networks:
+  wandersphere-network:
+    driver: bridge
+    name: wandersphere-network
+
+volumes:
+  postgres_data:
+    name: wandersphere-postgres-data
+  redis_data:
+    name: wandersphere-redis-data
+  minio_data:
+    name: wandersphere-minio-data
