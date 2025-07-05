@@ -36,6 +36,13 @@ const (
 
 	// Kafka reader timeout
 	KafkaReadTimeout = 10 * time.Second
+
+	// Sorted set key prefix for engagement-ranked newsfeeds
+	newsfeedRankedKeyPrefix = "newsfeed_ranked:"
+
+	// Engagement weight constants
+	likeWeight    = 2.0
+	commentWeight = 3.0
 )
 
 // MemoryStore is a simple in-memory fallback for Redis
@@ -643,6 +650,15 @@ func (svc *NewsfeedPublishingService) fetchFollowersFromAPI(ctx context.Context,
 }
 
 // addPostToFollowerFeeds adds the post to each follower's newsfeed
+// calculateEngagementScore computes a feed ranking score.
+// Base score is the Unix timestamp (ensures recency matters).
+// Engagement bonus: likes weighted at 2.0, comments at 3.0.
+func calculateEngagementScore(createdAtUnix int64, likes, comments int) float64 {
+	recency := float64(createdAtUnix)
+	engagement := float64(likes)*likeWeight + float64(comments)*commentWeight
+	return recency + engagement
+}
+
 func (svc *NewsfeedPublishingService) addPostToFollowerFeeds(followerIds []string, postID int64) error {
 	if len(followerIds) == 0 {
 		svc.logger.Info("No followers to add post to")
@@ -663,9 +679,23 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeeds(followerIds []strin
 		// Use pipelining for better performance with large follower counts
 		pipe := svc.redisPool.Client.Pipeline()
 
+		// Calculate engagement score for the new post (no engagement yet)
+		score := calculateEngagementScore(time.Now().Unix(), 0, 0)
+		svc.logger.Debug("Calculated engagement score for new post",
+			zap.Int64("post_id", postID),
+			zap.Float64("score", score))
+
 		for _, id := range followerIds {
 			newsfeedKey := "newsfeed:" + id
+			rankedKey := newsfeedRankedKeyPrefix + id
+
+			// Dual-write: list (backward compat) + sorted set (ranked)
 			pipe.RPush(ctx, newsfeedKey, postIDStr)
+			pipe.ZAdd(ctx, rankedKey, &redis.Z{
+				Score:  score,
+				Member: postIDStr,
+			})
+			pipe.Expire(ctx, rankedKey, FollowerCacheExpirationTime)
 		}
 
 		// Execute the pipeline
@@ -682,12 +712,30 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeeds(followerIds []strin
 		}
 
 		// Check for individual command errors
+		// Track followers with ranked-write failures
+		failedRankedFollowers := make(map[int]bool)
 		for i, cmd := range cmds {
 			if cmd.Err() != nil {
-				svc.logger.Error("Failed to add post to follower feed",
-					zap.String("follower_id", followerIds[i]),
+				followerIdx := i / 3 // 3 commands per follower: RPush, ZAdd, Expire
+				cmdType := i % 3     // 0=RPush, 1=ZAdd, 2=Expire
+				svc.logger.Error("Failed pipeline command for follower feed",
+					zap.String("follower_id", followerIds[followerIdx]),
+					zap.Int("cmd_type", cmdType),
 					zap.Error(cmd.Err()))
 				errCount++
+				if cmdType == 1 || cmdType == 2 { // ZAdd or Expire failed
+					failedRankedFollowers[followerIdx] = true
+				}
+			}
+		}
+
+		// Delete ranked keys for followers with failed ranked writes to prevent divergence
+		for followerIdx := range failedRankedFollowers {
+			rankedKey := newsfeedRankedKeyPrefix + followerIds[followerIdx]
+			if delErr := svc.redisPool.Client.Del(ctx, rankedKey).Err(); delErr != nil {
+				svc.logger.Error("Failed to delete inconsistent ranked key",
+					zap.String("follower_id", followerIds[followerIdx]),
+					zap.Error(delErr))
 			}
 		}
 
@@ -737,8 +785,12 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeedsIndividually(ctx con
 	errCount := 0
 	totalErrs := make([]error, 0)
 
+	// Calculate engagement score for the new post (no engagement yet)
+	score := calculateEngagementScore(time.Now().Unix(), 0, 0)
+
 	for _, id := range followerIds {
 		newsfeedKey := "newsfeed:" + id
+		rankedKey := newsfeedRankedKeyPrefix + id
 
 		// Try with retry
 		var redisErr error
@@ -746,6 +798,18 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeedsIndividually(ctx con
 			_, redisErr = svc.redisPool.Client.RPush(ctx, newsfeedKey, postIDStr).Result()
 
 			if redisErr == nil {
+				// Also write to ranked sorted set (best-effort)
+				if zErr := svc.redisPool.Client.ZAdd(ctx, rankedKey, &redis.Z{
+					Score:  score,
+					Member: postIDStr,
+				}).Err(); zErr != nil {
+					svc.logger.Error("Failed to add post to ranked feed; deleting ranked key to force list fallback",
+						zap.String("follower_id", id),
+						zap.Error(zErr))
+					svc.redisPool.Client.Del(ctx, rankedKey)
+				} else {
+					svc.redisPool.Client.Expire(ctx, rankedKey, FollowerCacheExpirationTime)
+				}
 				break
 			}
 

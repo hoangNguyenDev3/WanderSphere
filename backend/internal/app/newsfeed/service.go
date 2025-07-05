@@ -24,6 +24,9 @@ const (
 	// Default pagination values
 	DefaultPageSize = 10
 	MaxPageSize     = 50
+
+	// Sorted set key prefix for engagement-ranked newsfeeds
+	newsfeedRankedKeyPrefix = "newsfeed_ranked:"
 )
 
 type NewsfeedService struct {
@@ -108,16 +111,88 @@ func (svc *NewsfeedService) GetNewsfeed(ctx context.Context, req *pb_nf.GetNewsf
 	offset := int64((page - 1) * pageSize)
 	limit := int64(pageSize)
 
-	// Create Redis key for the user's newsfeed
+	// Create Redis keys for the user's newsfeed
 	newsfeedKey := fmt.Sprintf("newsfeed:%d", userID)
+	rankedKey := fmt.Sprintf("%s%d", newsfeedRankedKeyPrefix, userID)
 
 	svc.logger.Debug("Retrieving newsfeed",
 		zap.Int64("user_id", userID),
-		zap.String("key", newsfeedKey),
+		zap.String("list_key", newsfeedKey),
+		zap.String("ranked_key", rankedKey),
 		zap.Int32("page", page),
 		zap.Int32("page_size", pageSize))
 
-	// Get total count for pagination
+	// Try ranked sorted set first, fall back to list-based feed
+	rankedExists, err := svc.redisPool.Client.Exists(ctx, rankedKey).Result()
+	if err != nil {
+		svc.logger.Warn("Failed to check ranked feed existence, falling back to list",
+			zap.Int64("user_id", userID),
+			zap.Error(err))
+		rankedExists = 0
+	}
+
+	if rankedExists > 0 {
+		return svc.getNewsfeedFromRankedSet(ctx, rankedKey, userID, page, pageSize, offset, limit)
+	}
+
+	svc.logger.Debug("Ranked feed not found, using list-based feed",
+		zap.Int64("user_id", userID))
+	return svc.getNewsfeedFromList(ctx, newsfeedKey, userID, page, pageSize, offset, limit)
+}
+
+// getNewsfeedFromRankedSet reads the feed from the engagement-ranked sorted set
+func (svc *NewsfeedService) getNewsfeedFromRankedSet(ctx context.Context, rankedKey string, userID int64, page, pageSize int32, offset, limit int64) (*pb_nf.GetNewsfeedResponse, error) {
+	// Get total count using ZCard
+	totalItems, err := svc.redisPool.Client.ZCard(ctx, rankedKey).Result()
+	if err != nil {
+		svc.logger.Warn("Failed to get ranked newsfeed cardinality, falling back to list",
+			zap.Int64("user_id", userID),
+			zap.Error(err))
+		newsfeedKey := fmt.Sprintf("newsfeed:%d", userID)
+		return svc.getNewsfeedFromList(ctx, newsfeedKey, userID, page, pageSize, offset, limit)
+	}
+
+	totalPages := int32((totalItems + int64(pageSize) - 1) / int64(pageSize))
+
+	// Use ZRevRange with start/stop indices for pagination (highest score first)
+	postIds, err := svc.redisPool.Client.ZRevRange(ctx, rankedKey, offset, offset+limit-1).Result()
+	if err != nil {
+		svc.logger.Warn("Failed to retrieve ranked newsfeed, falling back to list",
+			zap.Int64("user_id", userID),
+			zap.Error(err))
+		newsfeedKey := fmt.Sprintf("newsfeed:%d", userID)
+		return svc.getNewsfeedFromList(ctx, newsfeedKey, userID, page, pageSize, offset, limit)
+	}
+
+	// Convert string IDs to int64
+	var postIdsInt64 []int64
+	for _, idStr := range postIds {
+		if id, err := strconv.ParseInt(idStr, 10, 64); err == nil {
+			postIdsInt64 = append(postIdsInt64, id)
+		} else {
+			svc.logger.Warn("Invalid post ID in ranked newsfeed",
+				zap.String("post_id", idStr),
+				zap.Error(err))
+		}
+	}
+
+	svc.logger.Info("Retrieved ranked newsfeed",
+		zap.Int64("user_id", userID),
+		zap.Int("post_count", len(postIdsInt64)),
+		zap.Int32("page", page),
+		zap.Int32("total_pages", totalPages))
+
+	return &pb_nf.GetNewsfeedResponse{
+		Status:      pb_nf.GetNewsfeedResponse_OK,
+		PostsIds:    postIdsInt64,
+		TotalPages:  totalPages,
+		CurrentPage: page,
+		TotalItems:  int32(totalItems),
+	}, nil
+}
+
+// getNewsfeedFromList reads the feed from the legacy chronological list
+func (svc *NewsfeedService) getNewsfeedFromList(ctx context.Context, newsfeedKey string, userID int64, page, pageSize int32, offset, limit int64) (*pb_nf.GetNewsfeedResponse, error) {
 	totalItems, err := svc.redisPool.Client.LLen(ctx, newsfeedKey).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -198,35 +273,59 @@ func (svc *NewsfeedService) GetNewsfeed(ctx context.Context, req *pb_nf.GetNewsf
 }
 
 func (svc *NewsfeedService) RemovePostFromNewsfeed(ctx context.Context, postID int64) error {
-	// Get all newsfeed keys
-	pattern := "newsfeed:*"
+	// Remove from both list-based and ranked feeds
+	listPattern := "newsfeed:*"
+	rankedPattern := newsfeedRankedKeyPrefix + "*"
 	var cursor uint64
 	var err error
 
 	// Remove the post ID from all newsfeeds
 	postIDStr := strconv.FormatInt(postID, 10)
 
+	// Remove from list-based feeds
 	for {
 		var keys []string
-		keys, cursor, err = svc.redisPool.Client.Scan(ctx, cursor, pattern, 10).Result()
+		keys, cursor, err = svc.redisPool.Client.Scan(ctx, cursor, listPattern, 10).Result()
 		if err != nil {
-			svc.logger.Error("Error scanning Redis keys", zap.Error(err))
+			svc.logger.Error("Error scanning Redis list keys", zap.Error(err))
 			return err
 		}
 
-		// Process each key
 		for _, key := range keys {
-			// Remove post ID from this feed
 			_, err := svc.redisPool.Client.LRem(ctx, key, 0, postIDStr).Result()
 			if err != nil {
-				svc.logger.Error("Error removing post from newsfeed",
+				svc.logger.Error("Error removing post from list newsfeed",
 					zap.String("key", key),
 					zap.Int64("post_id", postID),
 					zap.Error(err))
 			}
 		}
 
-		// Exit when we've processed all keys
+		if cursor == 0 {
+			break
+		}
+	}
+
+	// Remove from ranked sorted set feeds
+	cursor = 0
+	for {
+		var keys []string
+		keys, cursor, err = svc.redisPool.Client.Scan(ctx, cursor, rankedPattern, 10).Result()
+		if err != nil {
+			svc.logger.Error("Error scanning Redis ranked keys", zap.Error(err))
+			return err
+		}
+
+		for _, key := range keys {
+			_, err := svc.redisPool.Client.ZRem(ctx, key, postIDStr).Result()
+			if err != nil {
+				svc.logger.Error("Error removing post from ranked newsfeed",
+					zap.String("key", key),
+					zap.Int64("post_id", postID),
+					zap.Error(err))
+			}
+		}
+
 		if cursor == 0 {
 			break
 		}

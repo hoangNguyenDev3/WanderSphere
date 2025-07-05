@@ -17,16 +17,17 @@ type RedisFollowing struct {
 }
 
 type RedisPost struct {
-	ID               int64  `json:"id"`
-	CreatedAt        int64  `json:"created_at"`
-	UpdatedAt        int64  `json:"updated_at"`
-	DeletedAt        int64  `json:"deleted_at"`
-	UserID           int64  `json:"user_id"`
-	ContentText      string `json:"content_text"`
-	ContentImagePath string `json:"content_image_path"`
-	Visible          bool   `json:"visible"`
-	CommentsIds      string `json:"comments_ids"`
-	LikedUsersIds    string `json:"liked_users_ids"`
+	ID               int64   `json:"id"`
+	CreatedAt        int64   `json:"created_at"`
+	UpdatedAt        int64   `json:"updated_at"`
+	DeletedAt        int64   `json:"deleted_at"`
+	UserID           int64   `json:"user_id"`
+	ContentText      string  `json:"content_text"`
+	ContentImagePath string  `json:"content_image_path"`
+	Visible          bool    `json:"visible"`
+	CommentsIds      string  `json:"comments_ids"`
+	LikedUsersIds    string  `json:"liked_users_ids"`
+	EngagementScore  float64 `json:"engagement_score"`
 }
 
 type RedisComment struct {
