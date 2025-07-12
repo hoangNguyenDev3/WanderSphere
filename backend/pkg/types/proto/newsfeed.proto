@@ -9,8 +9,9 @@ service Newsfeed {
 
 message GetNewsfeedRequest {
     int64 user_id = 1;
-    int32 page = 2;
-    int32 page_size = 3;
+    int32 page = 2;        // deprecated, kept for backward compat
+    int32 page_size = 3;   // also used as limit for cursor pagination
+    string cursor = 4;     // base64-encoded cursor; empty = first page
 }
 
 message GetNewsfeedResponse {
@@ -20,9 +21,11 @@ message GetNewsfeedResponse {
     }
     GetNewsfeedStatus status = 1;
     repeated int64 posts_ids = 2;
-    int32 total_pages = 3;
-    int32 current_page = 4;
+    int32 total_pages = 3;      // deprecated for cursor mode
+    int32 current_page = 4;     // deprecated for cursor mode
     int32 total_items = 5;
+    string next_cursor = 6;     // empty = no more results
+    bool has_more = 7;
 }
 
 message InvalidateCacheRequest {

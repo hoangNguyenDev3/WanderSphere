@@ -7,10 +7,11 @@
 package newsfeed
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -117,9 +118,10 @@ type GetNewsfeedRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	UserId   int64 `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Page     int32 `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	UserId   int64  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Page     int32  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize int32  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	Cursor   string `protobuf:"bytes,4,opt,name=cursor,proto3" json:"cursor,omitempty"`
 }
 
 func (x *GetNewsfeedRequest) Reset() {
@@ -175,6 +177,13 @@ func (x *GetNewsfeedRequest) GetPageSize() int32 {
 	return 0
 }
 
+func (x *GetNewsfeedRequest) GetCursor() string {
+	if x != nil {
+		return x.Cursor
+	}
+	return ""
+}
+
 type GetNewsfeedResponse struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -185,6 +194,8 @@ type GetNewsfeedResponse struct {
 	TotalPages  int32                                 `protobuf:"varint,3,opt,name=total_pages,json=totalPages,proto3" json:"total_pages,omitempty"`
 	CurrentPage int32                                 `protobuf:"varint,4,opt,name=current_page,json=currentPage,proto3" json:"current_page,omitempty"`
 	TotalItems  int32                                 `protobuf:"varint,5,opt,name=total_items,json=totalItems,proto3" json:"total_items,omitempty"`
+	NextCursor  string                                `protobuf:"bytes,6,opt,name=next_cursor,json=nextCursor,proto3" json:"next_cursor,omitempty"`
+	HasMore     bool                                  `protobuf:"varint,7,opt,name=has_more,json=hasMore,proto3" json:"has_more,omitempty"`
 }
 
 func (x *GetNewsfeedResponse) Reset() {
@@ -252,6 +263,20 @@ func (x *GetNewsfeedResponse) GetTotalItems() int32 {
 		return x.TotalItems
 	}
 	return 0
+}
+
+func (x *GetNewsfeedResponse) GetNextCursor() string {
+	if x != nil {
+		return x.NextCursor
+	}
+	return ""
+}
+
+func (x *GetNewsfeedResponse) GetHasMore() bool {
+	if x != nil {
+		return x.HasMore
+	}
+	return false
 }
 
 type InvalidateCacheRequest struct {

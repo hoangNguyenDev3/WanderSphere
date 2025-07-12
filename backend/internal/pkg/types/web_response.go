@@ -56,7 +56,9 @@ type UserPostsResponse struct {
 }
 
 type NewsfeedResponse struct {
-	PostsIds []int64 `json:"posts_ids"`
+	PostsIds   []int64 `json:"posts_ids"`
+	NextCursor string  `json:"next_cursor,omitempty"`
+	HasMore    bool    `json:"has_more"`
 }
 
 // UserDetailInfo represents a user's profile information
