@@ -5,6 +5,7 @@ package newsfeed_publishing;
 
 service NewsfeedPublishing {
 	rpc PublishPost(PublishPostRequest) returns(PublishPostResponse) {}
+	rpc UpdateEngagementScore(UpdateEngagementScoreRequest) returns(UpdateEngagementScoreResponse) {}
 }
 
 message PublishPostRequest {
@@ -18,4 +19,20 @@ message PublishPostResponse {
 		FAILED = 1;
 	}
 	PublishPostResponseStatus status = 1;
+}
+
+message UpdateEngagementScoreRequest {
+	int64 post_id = 1;
+	int64 post_owner_id = 2;
+	int64 like_count = 3;
+	int64 comment_count = 4;
+	int64 created_at_unix = 5;
+}
+
+message UpdateEngagementScoreResponse {
+	enum UpdateEngagementScoreStatus {
+		OK = 0;
+		FAILED = 1;
+	}
+	UpdateEngagementScoreStatus status = 1;
 }

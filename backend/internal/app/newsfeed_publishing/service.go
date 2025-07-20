@@ -398,12 +398,16 @@ func (svc *NewsfeedPublishingService) processMessage(message kafka.Message) erro
 	svc.logger.Debug("Processing message", zap.String("type", msgType))
 
 	// Process message based on its key
-	if msgType == "post" {
+	switch msgType {
+	case "post":
 		return svc.processPost(message.Value)
+	case "score_update":
+		svc.processScoreUpdate(message.Value)
+		return nil
+	default:
+		svc.logger.Warn("Unknown message type", zap.String("type", msgType))
+		return nil
 	}
-
-	svc.logger.Warn("Unknown message type", zap.String("type", msgType))
-	return nil
 }
 
 // processPost handles post publication events
@@ -840,4 +844,137 @@ func (svc *NewsfeedPublishingService) addPostToFollowerFeedsIndividually(ctx con
 	}
 
 	return nil
+}
+
+// UpdateEngagementScore handles gRPC requests to update engagement scores in follower feeds
+func (svc *NewsfeedPublishingService) UpdateEngagementScore(
+	ctx context.Context, req *pb_nfp.UpdateEngagementScoreRequest,
+) (*pb_nfp.UpdateEngagementScoreResponse, error) {
+	svc.logger.Info("Received engagement score update request",
+		zap.Int64("post_id", req.PostId),
+		zap.Int64("post_owner_id", req.PostOwnerId),
+		zap.Int64("like_count", req.LikeCount),
+		zap.Int64("comment_count", req.CommentCount))
+
+	// Try Kafka first, fall back to direct processing
+	if svc.kafkaAvailable && svc.kafkaManager != nil && svc.kafkaWriter != nil {
+		msgData, err := json.Marshal(map[string]int64{
+			"post_id":         req.PostId,
+			"post_owner_id":   req.PostOwnerId,
+			"like_count":      req.LikeCount,
+			"comment_count":   req.CommentCount,
+			"created_at_unix": req.CreatedAtUnix,
+		})
+		if err == nil {
+			err = svc.kafkaWriter.WriteMessages(ctx, kafka.Message{
+				Key:   []byte("score_update"),
+				Value: msgData,
+			})
+		}
+		if err != nil {
+			svc.logger.Warn("Failed to write score update to Kafka, processing directly",
+				zap.Error(err))
+			svc.processScoreUpdateDirect(ctx, req.PostId, req.PostOwnerId,
+				req.LikeCount, req.CommentCount, req.CreatedAtUnix)
+		}
+	} else {
+		svc.processScoreUpdateDirect(ctx, req.PostId, req.PostOwnerId,
+			req.LikeCount, req.CommentCount, req.CreatedAtUnix)
+	}
+
+	return &pb_nfp.UpdateEngagementScoreResponse{
+		Status: pb_nfp.UpdateEngagementScoreResponse_OK,
+	}, nil
+}
+
+// processScoreUpdateDirect updates engagement scores directly in Redis for all followers
+func (svc *NewsfeedPublishingService) processScoreUpdateDirect(
+	ctx context.Context, postID, postOwnerID, likeCount, commentCount, createdAtUnix int64,
+) {
+	// Get the post owner's followers
+	followerIds, err := svc.getFollowers(postOwnerID)
+	if err != nil {
+		svc.logger.Error("Failed to get followers for score update",
+			zap.Int64("post_owner_id", postOwnerID),
+			zap.Error(err))
+		return
+	}
+
+	if len(followerIds) == 0 {
+		return
+	}
+
+	// Calculate new engagement score
+	newScore := calculateEngagementScore(createdAtUnix, int(likeCount), int(commentCount))
+	postIDStr := strconv.FormatInt(postID, 10)
+
+	svc.logger.Info("Updating engagement score in follower feeds",
+		zap.Int64("post_id", postID),
+		zap.Float64("new_score", newScore),
+		zap.Int("follower_count", len(followerIds)))
+
+	// Update score in all followers' ranked sorted sets using pipeline
+	if svc.redisAvailable && svc.redisPool != nil {
+		pipe := svc.redisPool.Client.Pipeline()
+		for _, followerID := range followerIds {
+			rankedKey := newsfeedRankedKeyPrefix + followerID
+			// ZAdd with the same member but new score updates the score in-place
+			pipe.ZAdd(ctx, rankedKey, &redis.Z{
+				Score:  newScore,
+				Member: postIDStr,
+			})
+		}
+		cmds, err := pipe.Exec(ctx)
+		if err != nil {
+			svc.logger.Error("Pipeline failed for score update, falling back to individual updates",
+				zap.Error(err))
+			// Individual fallback
+			for _, followerID := range followerIds {
+				rankedKey := newsfeedRankedKeyPrefix + followerID
+				if zErr := svc.redisPool.Client.ZAdd(ctx, rankedKey, &redis.Z{
+					Score:  newScore,
+					Member: postIDStr,
+				}).Err(); zErr != nil {
+					svc.logger.Error("Failed individual score update",
+						zap.String("follower_id", followerID),
+						zap.Error(zErr))
+				}
+			}
+		} else {
+			errCount := 0
+			for i, cmd := range cmds {
+				if cmd.Err() != nil {
+					if i < len(followerIds) {
+						svc.logger.Error("Failed to update score for follower",
+							zap.String("follower_id", followerIds[i]),
+							zap.Error(cmd.Err()))
+					}
+					errCount++
+				}
+			}
+			if errCount > 0 {
+				svc.logger.Warn("Some score updates failed",
+					zap.Int("failed_count", errCount),
+					zap.Int("total_count", len(followerIds)))
+			}
+		}
+	}
+}
+
+// processScoreUpdate handles score_update messages from Kafka
+func (svc *NewsfeedPublishingService) processScoreUpdate(value []byte) {
+	var data map[string]int64
+	if err := json.Unmarshal(value, &data); err != nil {
+		svc.logger.Error("Failed to unmarshal score update message", zap.Error(err))
+		return
+	}
+
+	postID := data["post_id"]
+	postOwnerID := data["post_owner_id"]
+	likeCount := data["like_count"]
+	commentCount := data["comment_count"]
+	createdAtUnix := data["created_at_unix"]
+
+	ctx := context.Background()
+	svc.processScoreUpdateDirect(ctx, postID, postOwnerID, likeCount, commentCount, createdAtUnix)
 }

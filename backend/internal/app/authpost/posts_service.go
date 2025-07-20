@@ -258,7 +258,7 @@ func (a *AuthenticateAndPostService) CommentPost(ctx context.Context, info *pb_a
 	if !exist {
 		return &pb_aap.CommentPostResponse{Status: pb_aap.CommentPostResponse_USER_NOT_FOUND}, nil
 	}
-	exist, _ = a.findPostById(info.GetPostId())
+	exist, post := a.findPostById(info.GetPostId())
 	if !exist {
 		return &pb_aap.CommentPostResponse{Status: pb_aap.CommentPostResponse_POST_NOT_FOUND}, nil
 	}
@@ -272,6 +272,8 @@ func (a *AuthenticateAndPostService) CommentPost(ctx context.Context, info *pb_a
 	if err != nil {
 		return nil, err
 	}
+
+	go a.triggerEngagementScoreUpdate(ctx, &post)
 
 	return &pb_aap.CommentPostResponse{
 		Status:    pb_aap.CommentPostResponse_OK,
@@ -302,7 +304,53 @@ func (a *AuthenticateAndPostService) LikePost(ctx context.Context, info *pb_aap.
 		return nil, err
 	}
 
+	go a.triggerEngagementScoreUpdate(ctx, &post)
+
 	return &pb_aap.LikePostResponse{
 		Status: pb_aap.LikePostResponse_OK,
 	}, nil
+}
+
+// getEngagementCounts retrieves the current like and comment counts for a post
+func (a *AuthenticateAndPostService) getEngagementCounts(postID int64) (likeCount, commentCount int64, err error) {
+	var lc, cc int64
+	if err := a.db.Model(&types.Like{}).Where("post_id = ?", postID).Count(&lc).Error; err != nil {
+		return 0, 0, err
+	}
+	if err := a.db.Model(&types.Comment{}).Where("post_id = ?", postID).Count(&cc).Error; err != nil {
+		return 0, 0, err
+	}
+	return lc, cc, nil
+}
+
+// triggerEngagementScoreUpdate fires an async score update to the newsfeed publishing service
+func (a *AuthenticateAndPostService) triggerEngagementScoreUpdate(parentCtx context.Context, post *types.Post) {
+	if a.nfPubClient == nil {
+		return
+	}
+
+	// Use a detached context with its own timeout, not the request-scoped context
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	likeCount, commentCount, err := a.getEngagementCounts(post.ID)
+	if err != nil {
+		a.logger.Error("Failed to get engagement counts for score update",
+			zap.Int64("post_id", post.ID),
+			zap.Error(err))
+		return
+	}
+
+	_, err = a.nfPubClient.UpdateEngagementScore(ctx, &pb_nfp.UpdateEngagementScoreRequest{
+		PostId:        post.ID,
+		PostOwnerId:   post.UserID,
+		LikeCount:     likeCount,
+		CommentCount:  commentCount,
+		CreatedAtUnix: post.CreatedAt.Unix(),
+	})
+	if err != nil {
+		a.logger.Error("Failed to trigger engagement score update",
+			zap.Int64("post_id", post.ID),
+			zap.Error(err))
+	}
 }

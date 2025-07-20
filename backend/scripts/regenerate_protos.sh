@@ -60,8 +60,8 @@ done
 # Apply a patch for compatibility with grpc v1.45.0
 for grpc_file in $(find pkg/types/proto/pb -name "*_grpc.pb.go"); do
   # Remove StaticMethod() calls and SupportPackageIsVersion9 references
-  sed -i 's/append(\[\]grpc.CallOption{grpc.StaticMethod()}, opts...)/opts/g' "$grpc_file"
-  sed -i 's/const _ = grpc.SupportPackageIsVersion9/\/\/ Using compatible gRPC version/g' "$grpc_file"
+  sed -i '' 's/append(\[\]grpc.CallOption{grpc.StaticMethod()}, opts...)/opts/g' "$grpc_file"
+  sed -i '' 's/const _ = grpc.SupportPackageIsVersion9/\/\/ Using compatible gRPC version/g' "$grpc_file"
   echo "Patched $grpc_file for compatibility"
 done
 

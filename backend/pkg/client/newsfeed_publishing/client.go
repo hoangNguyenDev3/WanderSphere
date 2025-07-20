@@ -13,6 +13,7 @@ import (
 // Client defines the interface for the Newsfeed Publishing client
 type Client interface {
 	PublishPost(ctx context.Context, in *pb_nfp.PublishPostRequest) (*pb_nfp.PublishPostResponse, error)
+	UpdateEngagementScore(ctx context.Context, in *pb_nfp.UpdateEngagementScoreRequest) (*pb_nfp.UpdateEngagementScoreResponse, error)
 }
 
 // NewClient creates a new client for the Newsfeed Publishing service
@@ -44,4 +45,9 @@ type randomClient struct {
 // PublishPost forwards to a random client
 func (rc *randomClient) PublishPost(ctx context.Context, in *pb_nfp.PublishPostRequest) (*pb_nfp.PublishPostResponse, error) {
 	return rc.clients[rand.Intn(len(rc.clients))].PublishPost(ctx, in)
+}
+
+// UpdateEngagementScore forwards to a random client
+func (rc *randomClient) UpdateEngagementScore(ctx context.Context, in *pb_nfp.UpdateEngagementScoreRequest) (*pb_nfp.UpdateEngagementScoreResponse, error) {
+	return rc.clients[rand.Intn(len(rc.clients))].UpdateEngagementScore(ctx, in)
 }
