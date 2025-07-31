@@ -3,20 +3,32 @@ package authpost
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
-
 	"math/rand"
 
-	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/middleware"
+	pb_aap "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
 )
 
 // NewClient creates a new client for the AuthenticateAndPost service
 func NewClient(hosts []string) (pb_aap.AuthenticateAndPostClient, error) {
-	var opts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	logger, _ := zap.NewProduction()
 	clients := make([]pb_aap.AuthenticateAndPostClient, 0, len(hosts))
 	for _, host := range hosts {
+		cb := middleware.NewCircuitBreaker(
+			fmt.Sprintf("authpost-%s", host),
+			middleware.DefaultCircuitBreakerConfig(),
+			logger,
+		)
+		opts := []grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(middleware.UnaryClientInterceptor(cb)),
+		}
 		conn, err := grpc.Dial(host, opts...)
 		if err != nil {
 			log.Printf("Failed to dial host %s: %v", host, err)

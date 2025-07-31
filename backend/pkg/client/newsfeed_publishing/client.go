@@ -2,12 +2,16 @@ package newsfeed_publishing
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 
-	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/middleware"
+	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
 )
 
 // Client defines the interface for the Newsfeed Publishing client
@@ -18,9 +22,18 @@ type Client interface {
 
 // NewClient creates a new client for the Newsfeed Publishing service
 func NewClient(hosts []string) (Client, error) {
-	var opts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	logger, _ := zap.NewProduction()
 	clients := make([]pb_nfp.NewsfeedPublishingClient, 0, len(hosts))
 	for _, host := range hosts {
+		cb := middleware.NewCircuitBreaker(
+			fmt.Sprintf("nfp-%s", host),
+			middleware.DefaultCircuitBreakerConfig(),
+			logger,
+		)
+		opts := []grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(middleware.UnaryClientInterceptor(cb)),
+		}
 		conn, err := grpc.Dial(host, opts...)
 		if err != nil {
 			log.Printf("Failed to dial host %s: %v", host, err)

@@ -2,18 +2,31 @@ package newsfeed
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 
-	pb_nf "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/middleware"
+	pb_nf "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed"
 )
 
 func NewClient(hosts []string) (pb_nf.NewsfeedClient, error) {
-	var opts = []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	logger, _ := zap.NewProduction()
 	clients := make([]pb_nf.NewsfeedClient, 0, len(hosts))
 	for _, host := range hosts {
+		cb := middleware.NewCircuitBreaker(
+			fmt.Sprintf("newsfeed-%s", host),
+			middleware.DefaultCircuitBreakerConfig(),
+			logger,
+		)
+		opts := []grpc.DialOption{
+			grpc.WithTransportCredentials(insecure.NewCredentials()),
+			grpc.WithUnaryInterceptor(middleware.UnaryClientInterceptor(cb)),
+		}
 		conn, err := grpc.Dial(host, opts...)
 		if err != nil {
 			log.Fatalf("fail to dial: %v", err)
