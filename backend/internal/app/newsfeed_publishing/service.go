@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/pkg/client/authpost"
@@ -43,6 +44,10 @@ const (
 	// Engagement weight constants
 	likeWeight    = 2.0
 	commentWeight = 3.0
+
+	// Idempotency key prefix and TTL for Kafka message deduplication
+	idempotencyKeyPrefix = "kafka:idem:"
+	idempotencyTTL       = 24 * time.Hour
 )
 
 // MemoryStore is a simple in-memory fallback for Redis
@@ -251,9 +256,11 @@ func (svc *NewsfeedPublishingService) PublishPost(ctx context.Context, info *pb_
 	}
 
 	// Otherwise use Kafka as normal
-	value := map[string]int64{
-		"user_id": info.GetUserId(),
-		"post_id": info.GetPostId(),
+	idempotencyID := uuid.New().String()
+	value := map[string]interface{}{
+		"idempotency_id": idempotencyID,
+		"user_id":        info.GetUserId(),
+		"post_id":        info.GetPostId(),
 	}
 
 	jsonValue, err := json.Marshal(value)
@@ -362,9 +369,12 @@ func (svc *NewsfeedPublishingService) Run() {
 			continue
 		}
 
-		// Process the message
+		// Process the message; on failure route to DLQ
 		if err := svc.processMessage(message); err != nil {
-			svc.logger.Error("Error processing message", zap.Error(err))
+			svc.logger.Error("Failed to process Kafka message",
+				zap.String("key", string(message.Key)),
+				zap.Error(err))
+			svc.sendToDLQ(message, err.Error())
 		}
 	}
 
@@ -402,8 +412,7 @@ func (svc *NewsfeedPublishingService) processMessage(message kafka.Message) erro
 	case "post":
 		return svc.processPost(message.Value)
 	case "score_update":
-		svc.processScoreUpdate(message.Value)
-		return nil
+		return svc.processScoreUpdate(message.Value)
 	default:
 		svc.logger.Warn("Unknown message type", zap.String("type", msgType))
 		return nil
@@ -412,14 +421,32 @@ func (svc *NewsfeedPublishingService) processMessage(message kafka.Message) erro
 
 // processPost handles post publication events
 func (svc *NewsfeedPublishingService) processPost(value []byte) error {
-	var message map[string]int64
-	if err := json.Unmarshal(value, &message); err != nil {
+	var data map[string]interface{}
+	if err := json.Unmarshal(value, &data); err != nil {
 		svc.logger.Error("Failed to unmarshal post message", zap.Error(err))
 		return err
 	}
 
-	userID := message["user_id"]
-	postID := message["post_id"]
+	// Extract and check idempotency ID (backward compatible with old messages)
+	idempotencyID, _ := data["idempotency_id"].(string)
+	ctx := context.Background()
+	if svc.checkAndMarkProcessed(ctx, idempotencyID) {
+		return nil // Already processed, skip
+	}
+
+	// Extract user_id and post_id (JSON numbers unmarshal to float64 in interface{} maps)
+	userVal, ok := data["user_id"].(float64)
+	if !ok {
+		svc.logger.Error("Invalid or missing user_id in post message")
+		return fmt.Errorf("invalid or missing user_id in post message")
+	}
+	postVal, ok := data["post_id"].(float64)
+	if !ok {
+		svc.logger.Error("Invalid or missing post_id in post message")
+		return fmt.Errorf("invalid or missing post_id in post message")
+	}
+	userID := int64(userVal)
+	postID := int64(postVal)
 
 	svc.logger.Info("Processing post publication",
 		zap.Int64("user_id", userID),
@@ -858,7 +885,9 @@ func (svc *NewsfeedPublishingService) UpdateEngagementScore(
 
 	// Try Kafka first, fall back to direct processing
 	if svc.kafkaAvailable && svc.kafkaManager != nil && svc.kafkaWriter != nil {
-		msgData, err := json.Marshal(map[string]int64{
+		idempotencyID := uuid.New().String()
+		msgData, err := json.Marshal(map[string]interface{}{
+			"idempotency_id":  idempotencyID,
 			"post_id":         req.PostId,
 			"post_owner_id":   req.PostOwnerId,
 			"like_count":      req.LikeCount,
@@ -962,19 +991,124 @@ func (svc *NewsfeedPublishingService) processScoreUpdateDirect(
 }
 
 // processScoreUpdate handles score_update messages from Kafka
-func (svc *NewsfeedPublishingService) processScoreUpdate(value []byte) {
-	var data map[string]int64
+func (svc *NewsfeedPublishingService) processScoreUpdate(value []byte) error {
+	var data map[string]interface{}
 	if err := json.Unmarshal(value, &data); err != nil {
 		svc.logger.Error("Failed to unmarshal score update message", zap.Error(err))
+		return err
+	}
+
+	// Extract and check idempotency ID (backward compatible with old messages)
+	idempotencyID, _ := data["idempotency_id"].(string)
+	ctx := context.Background()
+	if svc.checkAndMarkProcessed(ctx, idempotencyID) {
+		return nil // Already processed, skip
+	}
+
+	// Extract fields (JSON numbers are float64 in interface{} maps)
+	postIDVal, ok := data["post_id"].(float64)
+	if !ok {
+		svc.logger.Error("Invalid or missing post_id in score update message")
+		return fmt.Errorf("invalid or missing post_id in score update message")
+	}
+	postOwnerIDVal, ok := data["post_owner_id"].(float64)
+	if !ok {
+		svc.logger.Error("Invalid or missing post_owner_id in score update message")
+		return fmt.Errorf("invalid or missing post_owner_id in score update message")
+	}
+	likeCountVal, ok := data["like_count"].(float64)
+	if !ok {
+		svc.logger.Error("Invalid or missing like_count in score update message")
+		return fmt.Errorf("invalid or missing like_count in score update message")
+	}
+	commentCountVal, ok := data["comment_count"].(float64)
+	if !ok {
+		svc.logger.Error("Invalid or missing comment_count in score update message")
+		return fmt.Errorf("invalid or missing comment_count in score update message")
+	}
+	createdAtUnixVal, ok := data["created_at_unix"].(float64)
+	if !ok {
+		svc.logger.Error("Invalid or missing created_at_unix in score update message")
+		return fmt.Errorf("invalid or missing created_at_unix in score update message")
+	}
+
+	postID := int64(postIDVal)
+	postOwnerID := int64(postOwnerIDVal)
+	likeCount := int64(likeCountVal)
+	commentCount := int64(commentCountVal)
+	createdAtUnix := int64(createdAtUnixVal)
+
+	svc.processScoreUpdateDirect(ctx, postID, postOwnerID, likeCount, commentCount, createdAtUnix)
+	return nil
+}
+
+// checkAndMarkProcessed checks if a message has already been processed.
+// Returns true if already processed (should skip), false if new (should process).
+func (svc *NewsfeedPublishingService) checkAndMarkProcessed(ctx context.Context, idempotencyID string) bool {
+	if idempotencyID == "" || !svc.redisAvailable {
+		return false // No ID or no Redis — proceed with processing
+	}
+
+	key := idempotencyKeyPrefix + idempotencyID
+
+	// Use SetNX (SET if Not eXists) — atomic check-and-set
+	wasSet, err := svc.redisPool.Client.SetNX(ctx, key, "processed", idempotencyTTL).Result()
+	if err != nil {
+		svc.logger.Warn("Failed to check idempotency key, proceeding with processing",
+			zap.String("idempotency_id", idempotencyID),
+			zap.Error(err))
+		return false // On Redis error, proceed with processing (at-least-once > dropping)
+	}
+
+	if !wasSet {
+		// Key already existed — message was already processed
+		svc.logger.Info("Skipping duplicate message",
+			zap.String("idempotency_id", idempotencyID))
+		return true
+	}
+
+	return false // Key was set — this is a new message, proceed
+}
+
+// sendToDLQ writes a failed message to the dead letter queue topic
+func (svc *NewsfeedPublishingService) sendToDLQ(msg kafka.Message, reason string) {
+	if svc.kafkaManager == nil || len(svc.kafkaManager.Brokers) == 0 {
+		svc.logger.Error("Cannot send to DLQ: Kafka unavailable")
 		return
 	}
 
-	postID := data["post_id"]
-	postOwnerID := data["post_owner_id"]
-	likeCount := data["like_count"]
-	commentCount := data["comment_count"]
-	createdAtUnix := data["created_at_unix"]
+	dlqTopic := svc.kafkaWriter.Topic + "_dlq"
 
-	ctx := context.Background()
-	svc.processScoreUpdateDirect(ctx, postID, postOwnerID, likeCount, commentCount, createdAtUnix)
+	// Add DLQ metadata as headers
+	dlqMsg := kafka.Message{
+		Key:   msg.Key,
+		Value: msg.Value,
+		Headers: []kafka.Header{
+			{Key: "dlq_reason", Value: []byte(reason)},
+			{Key: "original_topic", Value: []byte(svc.kafkaWriter.Topic)},
+		},
+	}
+
+	// Create a DLQ writer (kafka-go Writer is topic-bound, so we need a separate one)
+	dlqWriter := kafka.NewWriter(kafka.WriterConfig{
+		Brokers:  svc.kafkaManager.Brokers,
+		Topic:    dlqTopic,
+		Balancer: &kafka.LeastBytes{},
+	})
+	defer dlqWriter.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := dlqWriter.WriteMessages(ctx, dlqMsg); err != nil {
+		svc.logger.Error("Failed to write message to DLQ",
+			zap.String("dlq_topic", dlqTopic),
+			zap.Error(err))
+		return
+	}
+
+	svc.logger.Warn("Message routed to DLQ",
+		zap.String("dlq_topic", dlqTopic),
+		zap.String("original_key", string(msg.Key)),
+		zap.String("reason", reason))
 }
