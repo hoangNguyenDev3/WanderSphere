@@ -1,6 +1,7 @@
 # Common configurations for aap and nf
 postgres: &POSTGRES
-  dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere sslmode=disable"
+  dsn: "host=postgres port=5432 user=postgres password=123456 dbname=wander_sphere
+    sslmode=disable"
   defaultStringSize: 256
   disableDatetimePrecision: true
   dontSupportRenameIndex: true
@@ -10,7 +11,7 @@ redis: &REDIS
 
 kafka: &KAFKA
   topic: "wander_sphere"
-  brokers: ["kafka:9092"]
+  brokers: [ "kafka:9092" ]
 
 logger: &LOGGER
   level: "debug"
@@ -21,15 +22,15 @@ s3: &S3
   secret_access_key: "minioadmin"
   region: "us-east-1"
   bucket: "wandersphere-binaries"
-  endpoint: "http://minio:9000"  # Use MinIO for local development
-  disable_ssl: true  # Set to false for production AWS S3
-  force_path_style: true  # Required for MinIO, set to false for AWS S3
+  endpoint: "http://minio:9000" # Use MinIO for local development
+  disable_ssl: true # Set to false for production AWS S3
+  force_path_style: true # Required for MinIO, set to false for AWS S3
 
 # Common auth configuration
 auth: &AUTH
   session:
     cookie_name: "wandersphere_session"
-    expiration_minutes: 1440  # 24 hours
+    expiration_minutes: 1440 # 24 hours
     secure: false
     http_only: true
     same_site: "strict"
@@ -42,7 +43,7 @@ authenticate_and_post_config: &AAP
   redis: *REDIS
   s3: *S3
   newsfeed_publishing:
-    hosts: ["nfp:19004"]
+    hosts: [ "nfp:19004" ]
   auth: *AUTH
 
 # Configuration for nf service connection
@@ -54,7 +55,7 @@ newsfeed_config: &NF
   kafka: *KAFKA
   s3: *S3
   authenticate_and_post:
-    hosts: ["aap:19001"]
+    hosts: [ "aap:19001" ]
 
 # Configuration for nfp service connection
 newsfeed_publishing_config: &NFP
@@ -64,18 +65,22 @@ newsfeed_publishing_config: &NFP
   kafka: *KAFKA
   s3: *S3
   authenticate_and_post:
-    hosts: ["aap:19001"]
+    hosts: [ "aap:19001" ]
 
 # Configurations for web app
 web_config:
   # Connection configs
   port: 19003
   logger: *LOGGER
-  api_version: ["v1"]
+  api_version: [ "v1" ]
   authenticate_and_post:
-    hosts: ["aap:19001"]
+    hosts: [ "aap:19001" ]
   newsfeed:
-    hosts: ["nf:19002"]
+    hosts: [ "nf:19002" ]
   redis: *REDIS
   s3: *S3
   auth: *AUTH
+  rate_limit:
+    enabled: true
+    requests_per_minute: 100
+    burst_size: 10

@@ -100,17 +100,25 @@ type NewsfeedPublishingConfig struct {
 	AuthenticateAndPost HostConfig   `yaml:"authenticate_and_post"`
 }
 
+// RateLimitConfig represents the configuration for rate limiting
+type RateLimitConfig struct {
+	Enabled           bool `yaml:"enabled"`
+	RequestsPerMinute int  `yaml:"requests_per_minute"`
+	BurstSize         int  `yaml:"burst_size"`
+}
+
 // WebConfig represents the configuration for the web app
 type WebConfig struct {
-	Port                int          `yaml:"port"`
-	Logger              LoggerConfig `yaml:"logger"`
-	APIVersions         []string     `yaml:"api_version"`
-	AuthenticateAndPost HostConfig   `yaml:"authenticate_and_post"`
-	Newsfeed            HostConfig   `yaml:"newsfeed"`
-	NewsfeedPublishing  HostConfig   `yaml:"newsfeed_publishing"`
-	Redis               RedisConfig  `yaml:"redis"`
-	S3                  S3Config     `yaml:"s3"`
-	Auth                AuthConfig   `yaml:"auth"`
+	Port                int             `yaml:"port"`
+	Logger              LoggerConfig    `yaml:"logger"`
+	APIVersions         []string        `yaml:"api_version"`
+	AuthenticateAndPost HostConfig      `yaml:"authenticate_and_post"`
+	Newsfeed            HostConfig      `yaml:"newsfeed"`
+	NewsfeedPublishing  HostConfig      `yaml:"newsfeed_publishing"`
+	Redis               RedisConfig     `yaml:"redis"`
+	S3                  S3Config        `yaml:"s3"`
+	Auth                AuthConfig      `yaml:"auth"`
+	RateLimit           RateLimitConfig `yaml:"rate_limit"`
 }
 
 // Config represents the main configuration for the whole system

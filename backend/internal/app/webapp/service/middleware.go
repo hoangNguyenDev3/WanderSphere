@@ -5,8 +5,23 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/middleware"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/pkg/types"
 )
+
+// RateLimit returns a Gin middleware that enforces per-user rate limiting
+func (svc *WebService) RateLimit() gin.HandlerFunc {
+	config := middleware.DefaultRateLimiterConfig()
+
+	if svc.Config != nil && svc.Config.RateLimit.RequestsPerMinute > 0 {
+		config.RequestsPerMinute = svc.Config.RateLimit.RequestsPerMinute
+		config.BurstSize = svc.Config.RateLimit.BurstSize
+		config.Enabled = svc.Config.RateLimit.Enabled
+	}
+
+	rl := middleware.NewRateLimiter(svc.RedisPool.Client, config, svc.Logger)
+	return rl.Middleware()
+}
 
 // AuthRequired is a middleware that checks if the user is authenticated
 // using session-based authentication
@@ -32,8 +47,11 @@ func (svc *WebService) AuthRequired() gin.HandlerFunc {
 // RefreshSession is a middleware that refreshes the session expiration time
 func (svc *WebService) RefreshSession() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		sessionId, _, err := svc.checkSessionAuthentication(c)
+		sessionId, userId, err := svc.checkSessionAuthentication(c)
 		if err == nil {
+			// Set user_id in context so downstream middleware (e.g. rate limiter) can use it
+			c.Set("user_id", userId)
+
 			// Get session configuration from config
 			var expirationTime time.Duration
 
