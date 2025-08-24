@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Frontend React Application
@@ -220,6 +220,42 @@ services:
     restart: unless-stopped
     # profiles: [ "kafka" ] # Making Zookeeper required for Kafka functionality
 
+    # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: wandersphere-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./backend/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+    networks:
+      - wandersphere-network
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: wandersphere-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=wandersphere
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./backend/grafana/provisioning:/etc/grafana/provisioning
+      - ./backend/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - wandersphere-network
+    restart: unless-stopped
+
 networks:
   wandersphere-network:
     driver: bridge
@@ -232,3 +268,7 @@ volumes:
     name: wandersphere-redis-data
   minio_data:
     name: wandersphere-minio-data
+  prometheus_data:
+    name: wandersphere-prometheus-data
+  grafana_data:
+    name: wandersphere-grafana-data

@@ -13,8 +13,10 @@ import (
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	newsfeed_publishing_svc "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/newsfeed_publishing"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/metrics"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	pb_nfp "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/newsfeed_publishing"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
@@ -93,6 +95,7 @@ func main() {
 	healthMux := http.NewServeMux()
 	healthMux.HandleFunc("/health", healthChecker.HealthHandler())
 	healthMux.HandleFunc("/health/detailed", createNFPHealthHandler(healthChecker, service))
+	healthMux.Handle("/metrics", promhttp.Handler())
 
 	healthServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", healthPort),
@@ -130,7 +133,9 @@ func main() {
 		log.Fatalf("can not listen on %s: %v", addr, err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(metrics.UnaryServerMetricsInterceptor("newsfeed_publishing")),
+	)
 	pb_nfp.RegisterNewsfeedPublishingServer(grpcServer, service)
 
 	log.Printf("Starting Newsfeed Publishing service on port %d", cfg.Port)

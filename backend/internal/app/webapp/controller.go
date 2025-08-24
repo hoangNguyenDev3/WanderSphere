@@ -10,7 +10,9 @@ import (
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/service"
 	v1 "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/v1"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/metrics"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
@@ -39,6 +41,10 @@ func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
 
 	// Init router
 	router := gin.Default()
+
+	// Add Prometheus metrics middleware and endpoint
+	router.Use(metrics.GinMetrics())
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// Add health check endpoints
 	initHealth(router, healthChecker, webService)

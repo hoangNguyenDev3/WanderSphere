@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 services:
 
   web:
@@ -176,6 +176,42 @@ services:
       retries: 3
     profiles: [ "infra", "all" ]
 
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus/prometheus-local.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+    networks:
+      - intranet
+    hostname: prometheus
+    restart: unless-stopped
+    profiles: [ "monitoring", "all" ]
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    ports:
+      - 3001:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=wandersphere
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - intranet
+    hostname: grafana
+    restart: unless-stopped
+    profiles: [ "monitoring", "all" ]
+
 networks:
   intranet: {}
   default: {}
@@ -183,3 +219,5 @@ networks:
 volumes:
   postgres_data:
   minio_data:
+  prometheus_data:
+  grafana_data:

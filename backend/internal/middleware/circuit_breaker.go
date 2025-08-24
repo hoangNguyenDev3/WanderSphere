@@ -9,6 +9,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/metrics"
 )
 
 // CircuitState represents the current state of the circuit breaker
@@ -193,6 +195,9 @@ func (cb *CircuitBreaker) transitionTo(newState CircuitState) {
 	cb.failureCount = 0
 	cb.successCount = 0
 	cb.halfOpenCalls = 0
+
+	metrics.CircuitBreakerTripsTotal.WithLabelValues(cb.name, oldState.String(), newState.String()).Inc()
+	metrics.CircuitBreakerState.WithLabelValues(cb.name).Set(float64(newState))
 
 	cb.logger.Info("Circuit breaker state transition",
 		zap.String("name", cb.name),

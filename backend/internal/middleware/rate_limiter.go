@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/metrics"
 	"go.uber.org/zap"
 )
 
@@ -98,6 +99,7 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(resetTime, 10))
 
 		if count > limit {
+			metrics.RateLimitHitsTotal.WithLabelValues("rejected").Inc()
 			rl.logger.Warn("Rate limit exceeded",
 				zap.String("key", key),
 				zap.Int64("count", count),
@@ -113,6 +115,7 @@ func (rl *RateLimiter) Middleware() gin.HandlerFunc {
 			return
 		}
 
+		metrics.RateLimitHitsTotal.WithLabelValues("allowed").Inc()
 		c.Next()
 	}
 }

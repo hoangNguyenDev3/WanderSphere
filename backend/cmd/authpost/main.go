@@ -12,8 +12,10 @@ import (
 
 	"github.com/hoangNguyenDev3/WanderSphere/backend/configs"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/authpost"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/metrics"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	pb "github.com/hoangNguyenDev3/WanderSphere/backend/pkg/types/proto/pb/authpost"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
 )
 
@@ -46,6 +48,7 @@ func main() {
 	healthMux := http.NewServeMux()
 	healthMux.HandleFunc("/health", healthChecker.HealthHandler())
 	healthMux.HandleFunc("/health/detailed", healthChecker.DetailedHealthHandler(service.GetDB(), nil))
+	healthMux.Handle("/metrics", promhttp.Handler())
 
 	healthServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", healthPort),
@@ -65,7 +68,9 @@ func main() {
 		log.Fatalf("can not listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(metrics.UnaryServerMetricsInterceptor("authpost")),
+	)
 	pb.RegisterAuthenticateAndPostServer(grpcServer, service)
 
 	// Setup graceful shutdown
