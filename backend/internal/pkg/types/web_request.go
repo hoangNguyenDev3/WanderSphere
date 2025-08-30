@@ -81,7 +81,7 @@ func validateDOB(fl validator.FieldLevel) bool {
 }
 
 func validatePassword(fl validator.FieldLevel) bool {
-	if len(fl.Field().String()) < 4 || len(fl.Field().String()) > 200 {
+	if len(fl.Field().String()) < 8 || len(fl.Field().String()) > 200 {
 		return false
 	}
 

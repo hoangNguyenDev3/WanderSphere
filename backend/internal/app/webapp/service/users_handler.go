@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -27,6 +28,18 @@ import (
 // @Failure 500 {object} types.ErrorResponse "Internal server error"
 // @Router /users/login [post]
 func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
+	// Check login attempt lockout
+	loginKey := fmt.Sprintf("login_attempts:%s", ctx.ClientIP())
+	attempts, _ := svc.RedisPool.Client.Get(ctx.Request.Context(), loginKey).Int64()
+	if attempts >= 10 {
+		ttl, _ := svc.RedisPool.Client.TTL(ctx.Request.Context(), loginKey).Result()
+		ctx.JSON(http.StatusTooManyRequests, types.ErrorResponse{
+			Error:   "too_many_attempts",
+			Message: fmt.Sprintf("Too many failed login attempts. Try again in %d minutes.", int(ttl.Minutes())+1),
+		})
+		return
+	}
+
 	// Validate request
 	var jsonRequest types.LoginRequest
 	err := ctx.ShouldBindJSON(&jsonRequest)
@@ -54,14 +67,21 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 		UserPassword: jsonRequest.Password,
 	})
 	if err != nil {
+		svc.Logger.Error("Failed to authenticate user", zap.String("username", jsonRequest.UserName), zap.Error(err))
 		ctx.JSON(http.StatusInternalServerError, types.ErrorResponse{
 			Error:   "internal_error",
-			Message: err.Error(),
+			Message: "An unexpected error occurred. Please try again later.",
 			Code:    http.StatusInternalServerError,
 		})
 		return
 	}
 	if authentication.GetStatus() == pb_aap.CheckUserAuthenticationResponse_USER_NOT_FOUND {
+		// Increment failed login attempts
+		pipe := svc.RedisPool.Client.TxPipeline()
+		pipe.Incr(ctx.Request.Context(), loginKey)
+		pipe.Expire(ctx.Request.Context(), loginKey, 15*time.Minute)
+		pipe.Exec(ctx.Request.Context())
+
 		ctx.JSON(http.StatusBadRequest, types.ErrorResponse{
 			Error:   "auth_error",
 			Message: "wrong username or password",
@@ -69,6 +89,12 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 		})
 		return
 	} else if authentication.GetStatus() == pb_aap.CheckUserAuthenticationResponse_WRONG_PASSWORD {
+		// Increment failed login attempts
+		pipe := svc.RedisPool.Client.TxPipeline()
+		pipe.Incr(ctx.Request.Context(), loginKey)
+		pipe.Expire(ctx.Request.Context(), loginKey, 15*time.Minute)
+		pipe.Exec(ctx.Request.Context())
+
 		ctx.JSON(http.StatusBadRequest, types.ErrorResponse{
 			Error:   "auth_error",
 			Message: "wrong username or password",
@@ -89,12 +115,16 @@ func (svc *WebService) CheckUserAuthentication(ctx *gin.Context) {
 			expirationTime = time.Hour * 24 // Default to 24 hours
 		}
 
+		// Clear failed login attempts on successful login
+		svc.RedisPool.Client.Del(ctx.Request.Context(), loginKey)
+
 		// Save current sessionID and expiration time in Redis
 		err = svc.RedisPool.Client.Set(svc.RedisPool.Client.Context(), sessionId, authentication.GetUserId(), expirationTime).Err()
 		if err != nil {
+			svc.Logger.Error("Failed to create session in Redis", zap.Error(err))
 			ctx.JSON(http.StatusInternalServerError, types.ErrorResponse{
 				Error:   "session_error",
-				Message: "Failed to create session: " + err.Error(),
+				Message: "An unexpected error occurred. Please try again later.",
 				Code:    http.StatusInternalServerError,
 			})
 			return
@@ -210,7 +240,8 @@ func (svc *WebService) CreateUser(ctx *gin.Context) {
 		Email:        jsonRequest.Email,
 	})
 	if err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
+		svc.Logger.Error("Failed to create user", zap.String("username", jsonRequest.UserName), zap.Error(err))
+		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "An unexpected error occurred. Please try again later."})
 		return
 	}
 	if resp.GetStatus() == pb_aap.CreateUserResponse_USERNAME_EXISTED {
@@ -245,7 +276,7 @@ func (svc *WebService) EditUser(ctx *gin.Context) {
 	// Check authorization
 	_, userId, err := svc.checkSessionAuthentication(ctx)
 	if err != nil {
-		ctx.IndentedJSON(http.StatusUnauthorized, types.MessageResponse{Message: err.Error()})
+		ctx.IndentedJSON(http.StatusUnauthorized, types.MessageResponse{Message: "Session is invalid or expired"})
 		return
 	}
 
@@ -303,7 +334,8 @@ func (svc *WebService) EditUser(ctx *gin.Context) {
 		CoverPicture:   coverPicture,
 	})
 	if err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
+		svc.Logger.Error("Failed to edit user", zap.Int("user_id", userId), zap.Error(err))
+		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "An unexpected error occurred. Please try again later."})
 		return
 	}
 	if resp.GetStatus() == pb_aap.EditUserResponse_USER_NOT_FOUND {
@@ -342,7 +374,8 @@ func (svc *WebService) GetUserDetailInfo(ctx *gin.Context) {
 		UserId: int64(userId),
 	})
 	if err != nil {
-		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: err.Error()})
+		svc.Logger.Error("Failed to get user details", zap.Int("user_id", userId), zap.Error(err))
+		ctx.IndentedJSON(http.StatusInternalServerError, types.MessageResponse{Message: "An unexpected error occurred. Please try again later."})
 		return
 	}
 	if resp.GetStatus() == pb_aap.GetUserDetailInfoResponse_USER_NOT_FOUND {
@@ -402,4 +435,39 @@ func (svc *WebService) checkSessionAuthentication(ctx *gin.Context) (sessionId s
 	}
 
 	return sessionId, userId, nil
+}
+
+// Logout invalidates the user's current session
+func (svc *WebService) Logout(ctx *gin.Context) {
+	sessionId, _, err := svc.checkSessionAuthentication(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, types.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "Not authenticated",
+		})
+		return
+	}
+
+	// Delete session from Redis
+	if err := svc.RedisPool.Client.Del(ctx.Request.Context(), sessionId).Err(); err != nil {
+		svc.Logger.Error("Failed to delete session", zap.String("session_id", sessionId), zap.Error(err))
+	}
+
+	// Clear session cookie
+	cookieName := "session_id"
+	if svc.Config != nil && svc.Config.Auth.Session.CookieName != "" {
+		cookieName = svc.Config.Auth.Session.CookieName
+	}
+
+	secure := true
+	httpOnly := true
+	if svc.Config != nil {
+		secure = svc.Config.Auth.Session.Secure
+		httpOnly = svc.Config.Auth.Session.HTTPOnly
+	}
+	ctx.SetCookie(cookieName, "", -1, "/", "", secure, httpOnly)
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Successfully logged out",
+	})
 }

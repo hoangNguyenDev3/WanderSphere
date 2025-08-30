@@ -11,6 +11,7 @@ import (
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/service"
 	v1 "github.com/hoangNguyenDev3/WanderSphere/backend/internal/app/webapp/v1"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/metrics"
+	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/middleware"
 	"github.com/hoangNguyenDev3/WanderSphere/backend/internal/utils"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
@@ -42,6 +43,23 @@ func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
 	// Init router
 	router := gin.Default()
 
+	// Security headers on ALL responses
+	router.Use(middleware.SecurityHeaders())
+
+	// CORS configuration
+	corsConfig := middleware.DefaultCORSConfig()
+	if cfg.Security.CORS.AllowedOrigins != nil && len(cfg.Security.CORS.AllowedOrigins) > 0 {
+		corsConfig.AllowedOrigins = cfg.Security.CORS.AllowedOrigins
+	}
+	router.Use(middleware.CORS(corsConfig))
+
+	// Request body size limit (default 10MB)
+	maxBodySize := int64(10 << 20) // 10 MB
+	if cfg.Security.MaxRequestBody > 0 {
+		maxBodySize = cfg.Security.MaxRequestBody << 20
+	}
+	router.Use(middleware.RequestSizeLimiter(maxBodySize))
+
 	// Add Prometheus metrics middleware and endpoint
 	router.Use(metrics.GinMetrics())
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
@@ -57,8 +75,12 @@ func NewWebController(cfg *configs.WebConfig) (*WebController, error) {
 	}
 
 	// Init other support tools
-	initSwagger(router)
-	initPprof(router)
+	if cfg.Security.SwaggerEnabled {
+		initSwagger(router)
+	}
+	if cfg.Security.PprofEnabled {
+		initPprof(router)
+	}
 
 	return &WebController{
 		webService:    *webService,

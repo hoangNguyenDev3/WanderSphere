@@ -17,4 +17,5 @@ func AddUserRouter(r *gin.RouterGroup, svc *service.WebService) {
 	authRouter := userRouter.Group("")
 	authRouter.Use(svc.AuthRequired())
 	authRouter.PUT("edit", svc.EditUser)
+	authRouter.POST("logout", svc.Logout)
 }

@@ -16,7 +16,7 @@ func HashPassword(password string, salt []byte) (string, error) {
 	passwordBytes = append(passwordBytes, salt...)
 
 	// Get the bcrypt hashed password
-	hashedPasswordBytes, err := bcrypt.GenerateFromPassword(passwordBytes, 4)
+	hashedPasswordBytes, err := bcrypt.GenerateFromPassword(passwordBytes, 12)
 	if err != nil {
 		return "", err
 	}

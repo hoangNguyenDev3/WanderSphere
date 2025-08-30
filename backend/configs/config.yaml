@@ -58,3 +58,11 @@ web_config:
     enabled: true
     requests_per_minute: 100
     burst_size: 10
+  security:
+    cors:
+      allowed_origins:
+        - "http://localhost:3000"
+        - "http://localhost:5173"
+    max_request_body_mb: 10
+    pprof_enabled: false
+    swagger_enabled: true

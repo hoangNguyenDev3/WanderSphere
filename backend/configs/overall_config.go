@@ -107,6 +107,19 @@ type RateLimitConfig struct {
 	BurstSize         int  `yaml:"burst_size"`
 }
 
+// CORSConfig represents CORS configuration
+type CORSConfig struct {
+	AllowedOrigins []string `yaml:"allowed_origins"`
+}
+
+// SecurityConfig represents security hardening configuration
+type SecurityConfig struct {
+	CORS           CORSConfig `yaml:"cors"`
+	MaxRequestBody int64      `yaml:"max_request_body_mb"`
+	PprofEnabled   bool       `yaml:"pprof_enabled"`
+	SwaggerEnabled bool       `yaml:"swagger_enabled"`
+}
+
 // WebConfig represents the configuration for the web app
 type WebConfig struct {
 	Port                int             `yaml:"port"`
@@ -119,6 +132,7 @@ type WebConfig struct {
 	S3                  S3Config        `yaml:"s3"`
 	Auth                AuthConfig      `yaml:"auth"`
 	RateLimit           RateLimitConfig `yaml:"rate_limit"`
+	Security            SecurityConfig  `yaml:"security"`
 }
 
 // Config represents the main configuration for the whole system
