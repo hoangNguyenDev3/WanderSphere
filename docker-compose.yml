@@ -124,7 +124,9 @@ services:
       - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/postgres/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./backend/postgres/init-db.sql:/docker-entrypoint-initdb.d/00-init-db.sql
+      - ./backend/migrations/0001_init_schema.up.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
+      - ./backend/migrations/0002_add_user_images.up.sql:/docker-entrypoint-initdb.d/02-add-user-images.sql
       - ./backend/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
     networks:
       - wandersphere-network
@@ -182,7 +184,7 @@ services:
 
   # Kafka (Optional - for event streaming)
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-kafka:7.5.0
     container_name: wandersphere-kafka
     depends_on:
       - zookeeper
@@ -208,7 +210,7 @@ services:
 
     # Zookeeper (Required by Kafka)
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+    image: confluentinc/cp-zookeeper:7.5.0
     container_name: wandersphere-zookeeper
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
