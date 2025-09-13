@@ -81,12 +81,12 @@ echo "=========================================="
 # Generate summary report
 echo ""
 echo "Generating summary report..."
-cat > "$RESULTS_DIR/REPORT.md" << 'REPORT_EOF'
+cat > "$RESULTS_DIR/REPORT.md" << REPORT_EOF
 # WanderSphere Load Test Report
 
 ## Test Configuration
-- **Profile**: $PROFILE
-- **Base URL**: $BASE_URL
+- **Profile**: ${PROFILE}
+- **Base URL**: ${BASE_URL}
 - **Date**: $(date)
 
 ## Performance Targets
@@ -97,17 +97,125 @@ cat > "$RESULTS_DIR/REPORT.md" << 'REPORT_EOF'
 | Error rate | < 1% | Check results |
 | Throughput | > 100 RPS | Check results |
 
-## Test Suites
-1. **Auth** - Signup, login, profile retrieval
-2. **Newsfeed** - Feed retrieval with cursor pagination
-3. **Posts** - Create, read, like, comment
-4. **Social** - Follow, unfollow, get followers
-
-## CV-Ready Metrics (fill after test run)
-- Sustained X RPS with p99 latency under Y ms across Z concurrent users
-- Feed retrieval p95 < Xms with cursor-based pagination under N concurrent readers
-- Zero-downtime under spike load of N→500 concurrent users
+## Structured Metrics
+See:
+- \`METRICS_SUMMARY.md\` for per-suite throughput/latency/error rates and threshold status.
+- \`*_summary.json\` for raw k6 summaries used to derive all metrics.
 REPORT_EOF
 
 echo "Report template saved to: $RESULTS_DIR/REPORT.md"
+
+echo ""
+echo "Generating structured metrics summary..."
+
+python3 - "$RESULTS_DIR" << 'PY_EOF'
+import json
+import os
+import sys
+from datetime import datetime
+
+results_dir = sys.argv[1]
+summary_files = sorted(
+    f for f in os.listdir(results_dir) if f.endswith("_summary.json")
+)
+
+if not summary_files:
+    print("No *_summary.json files found, skipping METRICS_SUMMARY.md generation.")
+    raise SystemExit(0)
+
+
+def read_metric_value(metrics, metric_name, value_key):
+    metric = metrics.get(metric_name, {})
+    values = metric.get("values", {})
+    return values.get(value_key)
+
+
+def fmt_float(value, digits=2):
+    if value is None:
+        return "N/A"
+    return f"{float(value):.{digits}f}"
+
+
+def fmt_ms(seconds):
+    if seconds is None:
+        return "N/A"
+    return f"{float(seconds) * 1000:.2f}ms"
+
+
+def threshold_status(metric_obj):
+    thresholds = metric_obj.get("thresholds", {})
+    if not thresholds:
+        return "N/A"
+    statuses = []
+    for name, detail in thresholds.items():
+        ok = detail.get("ok")
+        statuses.append(f"{name}:{'PASS' if ok else 'FAIL'}")
+    return ", ".join(statuses)
+
+
+lines = []
+lines.append("# Load Test Metrics Summary")
+lines.append("")
+lines.append(f"- Generated: {datetime.now().isoformat(timespec='seconds')}")
+lines.append(f"- Results directory: `{results_dir}`")
+lines.append("")
+lines.append("| Suite | Iter/s | HTTP req/s | HTTP p95 | HTTP p99 | HTTP error rate | Thresholds |")
+lines.append("|---|---:|---:|---:|---:|---:|---|")
+
+for filename in summary_files:
+    path = os.path.join(results_dir, filename)
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    metrics = data.get("metrics", {})
+    suite = filename.replace("_summary.json", "")
+
+    iter_rate = read_metric_value(metrics, "iterations", "rate")
+    req_rate = read_metric_value(metrics, "http_reqs", "rate")
+    p95 = read_metric_value(metrics, "http_req_duration", "p(95)")
+    p99 = read_metric_value(metrics, "http_req_duration", "p(99)")
+    failed_rate = read_metric_value(metrics, "http_req_failed", "rate")
+
+    http_req_duration = metrics.get("http_req_duration", {})
+    http_req_failed = metrics.get("http_req_failed", {})
+    http_reqs = metrics.get("http_reqs", {})
+
+    threshold_parts = []
+    if http_req_duration.get("thresholds"):
+        threshold_parts.append("http_req_duration[" + threshold_status(http_req_duration) + "]")
+    if http_req_failed.get("thresholds"):
+        threshold_parts.append("http_req_failed[" + threshold_status(http_req_failed) + "]")
+    if http_reqs.get("thresholds"):
+        threshold_parts.append("http_reqs[" + threshold_status(http_reqs) + "]")
+
+    lines.append(
+        "| "
+        + suite
+        + " | "
+        + fmt_float(iter_rate)
+        + " | "
+        + fmt_float(req_rate)
+        + " | "
+        + fmt_ms(p95)
+        + " | "
+        + fmt_ms(p99)
+        + " | "
+        + (f"{float(failed_rate) * 100:.2f}%" if failed_rate is not None else "N/A")
+        + " | "
+        + ("; ".join(threshold_parts) if threshold_parts else "N/A")
+        + " |"
+    )
+
+lines.append("")
+lines.append("## Notes")
+lines.append("- `http_req_duration` reflects k6 end-to-end request timing.")
+lines.append("- Use this file for CV/README claims; pair each claim with the matching `*_summary.json` artifact.")
+
+output_path = os.path.join(results_dir, "METRICS_SUMMARY.md")
+with open(output_path, "w", encoding="utf-8") as f:
+    f.write("\n".join(lines) + "\n")
+
+print(f"Wrote {output_path}")
+PY_EOF
+
 echo "Done!"
