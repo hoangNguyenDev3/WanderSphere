@@ -65,7 +65,7 @@ export default function () {
                 const body = createRes.json();
                 postId = body.post_id || body.id;
                 postsCreated.add(1);
-            } catch (e) {}
+            } catch (e) { }
         }
     });
 

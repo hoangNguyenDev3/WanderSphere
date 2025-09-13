@@ -55,8 +55,8 @@ export default function () {
             'login status 200': (r) => r.status === 200,
             'login has session cookie': (r) => {
                 const cookies = r.cookies;
-                return cookies['wandersphere_session'] !== undefined || 
-                       cookies['session_id'] !== undefined;
+                return cookies['wandersphere_session'] !== undefined ||
+                    cookies['session_id'] !== undefined;
             },
         });
         authErrorRate.add(!loginOk);
